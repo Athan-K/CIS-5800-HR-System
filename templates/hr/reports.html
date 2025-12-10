@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+
+{% block title %}Reports - Ethos HRMS{% endblock %}
+
+{% block navigation %}
+{% include "components/navbar_hr.html" %}
+{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <h2 class="text-sm font-medium text-gray-600 mb-4">Reports</h2>
+    
+    <div class="flex gap-4">
+        <!-- Report Configuration Panel -->
+        <div class="w-64 bg-gray-100 rounded-lg p-4 border border-gray-200">
+            <form id="report-form" 
+                  hx-get="{% url 'hr:generate_report' %}"
+                  hx-target="#report-preview"
+                  hx-trigger="submit">
+                
+                <!-- Report Type -->
+                <div class="mb-4">
+                    <label class="block text-xs font-medium text-gray-600 mb-2">Report Type</label>
+                    <select name="report_type" 
+                            class="w-full px-3 py-2 bg-white border border-gray-300 rounded text-sm">
+                        <option value="">Select type...</option>
+                        {% for value, label in report_types %}
+                        <option value="{{ value }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <!-- Date Range -->
+                <div class="mb-4">
+                    <label class="block text-xs font-medium text-gray-600 mb-2">Date Range</label>
+                    <input type="date" 
+                           name="start_date"
+                           class="w-full px-3 py-2 bg-white border border-gray-300 rounded text-sm mb-2">
+                    <input type="date" 
+                           name="end_date"
+                           class="w-full px-3 py-2 bg-white border border-gray-300 rounded text-sm">
+                </div>
+                
+                <!-- Department -->
+                <div class="mb-4">
+                    <label class="block text-xs font-medium text-gray-600 mb-2">Department</label>
+                    <select name="department" 
+                            class="w-full px-3 py-2 bg-white border border-gray-300 rounded text-sm">
+                        <option value="">All Departments</option>
+                        {% for dept in departments %}
+                        <option value="{{ dept.id }}">{{ dept.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <!-- Include Fields -->
+                <div class="mb-4">
+                    <label class="block text-xs font-medium text-gray-600 mb-2">Include Fields</label>
+                    <div class="bg-white border border-gray-300 rounded p-2 h-32 overflow-y-auto text-xs">
+                        <label class="flex items-center gap-2 py-1">
+                            <input type="checkbox" name="fields" value="name" checked>
+                            <span>Employee Name</span>
+                        </label>
+                        <label class="flex items-center gap-2 py-1">
+                            <input type="checkbox" name="fields" value="department" checked>
+                            <span>Department</span>
+                        </label>
+                        <label class="flex items-center gap-2 py-1">
+                            <input type="checkbox" name="fields" value="role" checked>
+                            <span>Role/Title</span>
+                        </label>
+                        <label class="flex items-center gap-2 py-1">
+                            <input type="checkbox" name="fields" value="start_date">
+                            <span>Start Date</span>
+                        </label>
+                        <label class="flex items-center gap-2 py-1">
+                            <input type="checkbox" name="fields" value="salary">
+                            <span>Salary</span>
+                        </label>
+                        <label class="flex items-center gap-2 py-1">
+                            <input type="checkbox" name="fields" value="leave_balance">
+                            <span>Leave Balance</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="flex gap-2">
+                    <button type="submit" 
+                            class="flex-1 px-3 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded text-sm border border-gray-300">
+                        Generate
+                    </button>
+                    <button type="reset" 
+                            class="flex-1 px-3 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded text-sm border border-gray-300">
+                        Reset
+                    </button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Report Preview Panel -->
+        <div class="flex-1 bg-gray-100 rounded-lg border border-gray-200">
+            <!-- Preview Header -->
+            <div class="flex justify-between items-center px-4 py-3 border-b border-gray-200">
+                <span class="text-xs font-medium text-gray-600">Generated Report Preview</span>
+                <div class="flex gap-2">
+                    <button onclick="printReport()" 
+                            class="px-3 py-1 bg-gray-200 hover:bg-gray-300 text-gray-600 rounded text-xs border border-gray-300">
+                        Print
+                    </button>
+                    <button onclick="saveReport()" 
+                            class="px-3 py-1 bg-gray-200 hover:bg-gray-300 text-gray-600 rounded text-xs border border-gray-300">
+                        Save As
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Preview Content -->
+            <div id="report-preview" class="p-4 min-h-[500px]">
+                <!-- Chart Container -->
+                <div class="mb-6">
+                    <canvas id="report-chart" class="max-h-64"></canvas>
+                </div>
+                
+                <!-- Data Table -->
+                <div class="bg-white rounded border border-gray-200 overflow-hidden">
+                    <table class="w-full text-xs">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-3 py-2 text-left text-gray-600 border-b">—</th>
+                                <th class="px-3 py-2 text-left text-gray-600 border-b">—</th>
+                                <th class="px-3 py-2 text-left text-gray-600 border-b">—</th>
+                                <th class="px-3 py-2 text-left text-gray-600 border-b">—</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for i in "12345678910" %}
+                            <tr class="border-b border-gray-100">
+                                <td class="px-3 py-2 text-gray-400">—</td>
+                                <td class="px-3 py-2 text-gray-400">—</td>
+                                <td class="px-3 py-2 text-gray-400">—</td>
+                                <td class="px-3 py-2 text-gray-400">—</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <p class="text-center text-gray-400 text-sm mt-8">
+                    Select report options and click "Generate" to preview
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let reportChart = null;
+    
+    // Listen for HTMX response to update chart
+    document.body.addEventListener('htmx:afterSwap', function(event) {
+        if (event.detail.target.id === 'report-preview') {
+            updateChart(event.detail.xhr.response);
+        }
+    });
+    
+    function updateChart(data) {
+        try {
+            const parsed = JSON.parse(data);
+            const ctx = document.getElementById('report-chart');
+            
+            if (reportChart) {
+                reportChart.destroy();
+            }
+            
+            if (parsed.by_department) {
+                reportChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: parsed.by_department.map(d => d.department__name || 'Unknown'),
+                        datasets: [{
+                            label: 'Employees',
+                            data: parsed.by_department.map(d => d.count),
+                            backgroundColor: 'rgba(34, 197, 94, 0.5)',
+                            borderColor: 'rgb(34, 197, 94)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { display: false }
+                        }
+                    }
+                });
+            }
+        } catch (e) {
+            // Not JSON, probably HTML preview
+        }
+    }
+    
+    function printReport() {
+        window.print();
+    }
+    
+    function saveReport() {
+        alert('Export functionality would save as CSV/PDF');
+    }
+</script>
+{% endblock %}

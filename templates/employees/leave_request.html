@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block title %}Leave Request - Ethos HRMS{% endblock %}
+
+{% block navigation %}
+{% include "components/navbar_employee.html" %}
+{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-6">
+    <!-- Leave Request Form -->
+    <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-gray-300">
+        <h2 class="text-xl font-semibold text-gray-800 mb-6">Leave Request</h2>
+        
+        <form method="post">
+            {% csrf_token %}
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <!-- Leave Type -->
+                <div>
+                    <label class="block text-sm text-gray-600 mb-1">Leave Type</label>
+                    <select name="leave_type" 
+                            id="leave-type"
+                            hx-get="{% url 'employees:check_balance' %}"
+                            hx-target="#balance-display"
+                            hx-trigger="change"
+                            class="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-sm">
+                        <option value="">Vacation / Sick / Other</option>
+                        <option value="annual">Annual Leave</option>
+                        <option value="vacation">Vacation</option>
+                        <option value="sick">Sick Leave</option>
+                        <option value="unpaid">Unpaid Leave</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                
+                <!-- Start Date -->
+                <div>
+                    <label class="block text-sm text-gray-600 mb-1">Start Date</label>
+                    <input type="date" 
+                           name="start_date"
+                           required
+                           class="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-sm">
+                </div>
+                
+                <!-- End Date -->
+                <div>
+                    <label class="block text-sm text-gray-600 mb-1">End Date</label>
+                    <input type="date" 
+                           name="end_date"
+                           required
+                           class="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-sm">
+                </div>
+            </div>
+            
+            <!-- Reason -->
+            <div class="mb-4">
+                <label class="block text-sm text-gray-600 mb-1">Reason</label>
+                <textarea name="reason"
+                          rows="4"
+                          required
+                          placeholder="Short note..."
+                          class="w-full px-4 py-3 bg-gray-100 border border-gray-300 rounded-lg text-sm resize-none"></textarea>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="flex gap-3">
+                <button type="button" 
+                        onclick="checkBalance()"
+                        class="px-6 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-sm transition">
+                    Check Balance
+                </button>
+                <button type="submit" 
+                        class="px-6 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-sm transition">
+                    Submit
+                </button>
+                <button type="reset" 
+                        class="px-6 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-sm transition">
+                    Cancel
+                </button>
+            </div>
+        </form>
+        
+        <!-- Balance Display -->
+        <div id="balance-display" class="mt-4">
+            <div class="grid grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg">
+                <div class="text-center">
+                    <p class="text-2xl font-bold text-green-600">{{ leave_balances.annual }}</p>
+                    <p class="text-xs text-gray-500">Annual Days</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-2xl font-bold text-blue-600">{{ leave_balances.vacation }}</p>
+                    <p class="text-xs text-gray-500">Vacation Days</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-2xl font-bold text-orange-600">{{ leave_balances.sick }}</p>
+                    <p class="text-xs text-gray-500">Sick Days</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Requests Table -->
+    <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-gray-300">
+        <h2 class="text-xl font-semibold text-gray-800 mb-6">Recent Requests</h2>
+        
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="border-b border-gray-200">
+                        <th class="px-4 py-3 text-left text-sm font-medium text-gray-600">Submitted</th>
+                        <th class="px-4 py-3 text-left text-sm font-medium text-gray-600">Type</th>
+                        <th class="px-4 py-3 text-left text-sm font-medium text-gray-600">Dates</th>
+                        <th class="px-4 py-3 text-left text-sm font-medium text-gray-600">Status</th>
+                        <th class="px-4 py-3 text-left text-sm font-medium text-gray-600">Manager Note</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for request in recent_requests %}
+                    <tr class="border-b border-gray-100 hover:bg-gray-50">
+                        <td class="px-4 py-3 text-sm text-gray-600">
+                            {{ request.submitted_at|date:"M d, Y" }}
+                        </td>
+                        <td class="px-4 py-3 text-sm text-gray-600">
+                            {{ request.get_leave_type_display }}
+                        </td>
+                        <td class="px-4 py-3 text-sm text-gray-600">
+                            {{ request.start_date|date:"M d" }} - {{ request.end_date|date:"M d, Y" }}
+                            <span class="text-xs text-gray-400">({{ request.days_requested }} days)</span>
+                        </td>
+                        <td class="px-4 py-3 text-sm">
+                            <span class="px-2 py-1 rounded-full text-xs 
+                                {% if request.status == 'pending' %}bg-yellow-100 text-yellow-800
+                                {% elif request.status == 'approved' %}bg-green-100 text-green-800
+                                {% elif request.status == 'rejected' %}bg-red-100 text-red-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ request.get_status_display }}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 text-sm text-gray-500">
+                            {{ request.manager_notes|default:"—" }}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="px-4 py-8 text-center text-gray-500">
+                            No leave requests submitted yet.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    function checkBalance() {
+        const leaveType = document.getElementById('leave-type').value;
+        if (!leaveType) {
+            alert('Please select a leave type first.');
+            return;
+        }
+        // HTMX will handle the actual balance check
+        htmx.trigger('#leave-type', 'change');
+    }
+</script>
+{% endblock %}

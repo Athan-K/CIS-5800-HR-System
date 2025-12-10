@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Ethos HRMS{% endblock %}
+
+{% block navigation %}
+{% include "components/navbar_employee.html" %}
+{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <h2 class="text-lg font-medium text-gray-700 mb-6">Dashboard</h2>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <!-- My Profile Card -->
+        <div class="bg-gray-200 rounded-xl p-6 shadow">
+            <h3 class="font-bold text-gray-800 mb-4">My Profile</h3>
+            <div class="space-y-2 text-sm">
+                <p><span class="font-medium">Name:</span> {{ employee.full_name }}</p>
+                <p><span class="font-medium">Emplid:</span> {{ employee.employee_id }}</p>
+                <p><span class="font-medium">Role:</span> {{ employee.job_title }}</p>
+                <p><span class="font-medium">Manager:</span> {{ employee.manager.full_name|default:"N/A" }}</p>
+            </div>
+        </div>
+        
+        <!-- Attendance Overview Card -->
+        <div class="bg-gray-200 rounded-xl p-6 shadow">
+            <h3 class="font-bold text-gray-800 mb-4">Attendance Overview</h3>
+            <div class="text-sm">
+                <p class="font-medium mb-2">Calendar:</p>
+                <!-- Simple calendar placeholder - you can enhance with a JS calendar -->
+                <div class="bg-white rounded-lg p-4 text-center text-gray-500">
+                    <p>{% now "F Y" %}</p>
+                    {% if recent_attendance %}
+                    <p class="mt-2 text-xs">
+                        Last recorded: {{ recent_attendance.0.date|date:"M d, Y" }}
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Payslips Card -->
+        <div class="bg-gray-200 rounded-xl p-6 shadow">
+            <h3 class="font-bold text-gray-800 mb-4">Payslips</h3>
+            <div class="text-sm">
+                <p class="font-medium">Latest Pay Slip:</p>
+                {% if latest_payslip %}
+                <div class="mt-2 bg-white rounded-lg p-3">
+                    <p class="text-gray-600">{{ latest_payslip.pay_date|date:"M d, Y" }}</p>
+                    <p class="text-lg font-bold text-green-600">${{ latest_payslip.net_pay|floatformat:2 }}</p>
+                </div>
+                {% else %}
+                <p class="text-gray-500 mt-2">No payslips available</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Employee Leave Card -->
+        <div class="bg-gray-200 rounded-xl p-6 shadow">
+            <h3 class="font-bold text-gray-800 mb-4">Employee leave:</h3>
+            <div class="space-y-3 text-sm">
+                <div class="flex justify-between items-center">
+                    <span class="font-medium">Annual:</span>
+                    <span class="bg-white px-3 py-1 rounded-full">{{ leave_balances.annual }} days</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="font-medium">Vacation:</span>
+                    <span class="bg-white px-3 py-1 rounded-full">{{ leave_balances.vacation }} days</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="font-medium">Sick Leave:</span>
+                    <span class="bg-white px-3 py-1 rounded-full">{{ leave_balances.sick }} days</span>
+                </div>
+            </div>
+            
+            {% if pending_requests > 0 %}
+            <div class="mt-4 p-2 bg-yellow-100 rounded-lg text-center">
+                <span class="text-sm text-yellow-800">{{ pending_requests }} pending request(s)</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

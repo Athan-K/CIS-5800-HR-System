@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+
+{% block title %}My Payslips - Ethos HRMS{% endblock %}
+
+{% block navigation %}
+{% include "components/navbar_employee.html" %}
+{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto">
+    <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+        <h2 class="text-xl font-semibold text-gray-800 mb-6">Payslips</h2>
+        
+        <!-- Controls -->
+        <div class="flex flex-wrap gap-4 mb-6">
+            <div>
+                <label class="block text-xs text-gray-500 mb-1">Select Pay Period</label>
+                <select id="pay-period-select" 
+                        onchange="selectPayslip(this.value)"
+                        class="px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-sm min-w-[200px]">
+                    <option value="">e.g., Sep 15, 2025</option>
+                    {% for payslip in payslips %}
+                    <option value="{{ payslip.id }}">{{ payslip.pay_date|date:"M d, Y" }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="flex gap-2 self-end">
+                <button type="button" 
+                        onclick="viewPayslip()"
+                        class="px-6 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-sm transition">
+                    View Payslip
+                </button>
+                <button type="button" 
+                        onclick="downloadPayslip()"
+                        class="px-6 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-sm transition">
+                    Download PDF
+                </button>
+                <button type="button" 
+                        onclick="printPayslip()"
+                        class="px-6 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-sm transition">
+                    Print
+                </button>
+            </div>
+        </div>
+        
+        <!-- Payslips Table -->
+        <div class="bg-gray-100 rounded-lg overflow-hidden">
+            <table class="w-full">
+                <thead>
+                    <tr class="border-b border-gray-300">
+                        <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">Date</th>
+                        <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">Gross</th>
+                        <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">Net</th>
+                        <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">Deductions</th>
+                        <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for payslip in payslips %}
+                    <tr class="border-b border-gray-200 hover:bg-gray-50" data-payslip-id="{{ payslip.id }}">
+                        <td class="px-4 py-3 text-sm text-gray-600">
+                            {{ payslip.pay_date|date:"M d, Y" }}
+                            <span class="block text-xs text-gray-400">
+                                {{ payslip.pay_period_start|date:"M d" }} - {{ payslip.pay_period_end|date:"M d" }}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 text-sm text-gray-600">${{ payslip.gross_pay|floatformat:2 }}</td>
+                        <td class="px-4 py-3 text-sm font-medium text-green-600">${{ payslip.net_pay|floatformat:2 }}</td>
+                        <td class="px-4 py-3 text-sm text-red-600">-${{ payslip.deductions|floatformat:2 }}</td>
+                        <td class="px-4 py-3 text-sm">
+                            <div class="flex gap-2">
+                                <button onclick="viewPayslipDetail({{ payslip.id }})" 
+                                        class="text-blue-600 hover:text-blue-800 text-xs">
+                                    View
+                                </button>
+                                {% if payslip.pdf_file %}
+                                <a href="{{ payslip.pdf_file.url }}" 
+                                   download
+                                   class="text-green-600 hover:text-green-800 text-xs">
+                                    Download
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="px-4 py-8 text-center text-gray-500">
+                            No payslips available yet.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Payslip Detail Modal -->
+<div id="payslip-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-xl p-6 max-w-lg w-full mx-4">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold">Payslip Details</h3>
+            <button onclick="closePayslipModal()" class="text-gray-500 hover:text-gray-700">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <div id="payslip-content">
+            <!-- Content loaded dynamically -->
+        </div>
+    </div>
+</div>
+
+<script>
+    function selectPayslip(id) {
+        document.querySelectorAll('tbody tr').forEach(row => {
+            row.classList.remove('bg-blue-50');
+        });
+        if (id) {
+            document.querySelector(`tr[data-payslip-id="${id}"]`)?.classList.add('bg-blue-50');
+        }
+    }
+    
+    function viewPayslipDetail(id) {
+        document.getElementById('payslip-modal').classList.remove('hidden');
+        document.getElementById('payslip-modal').classList.add('flex');
+        document.getElementById('payslip-content').innerHTML = `
+            <div class="text-center py-8">
+                <p class="text-gray-500">Loading payslip details...</p>
+            </div>
+        `;
+    }
+    
+    function closePayslipModal() {
+        document.getElementById('payslip-modal').classList.add('hidden');
+        document.getElementById('payslip-modal').classList.remove('flex');
+    }
+    
+    function viewPayslip() {
+        const selected = document.getElementById('pay-period-select').value;
+        if (selected) {
+            viewPayslipDetail(selected);
+        } else {
+            alert('Please select a pay period first.');
+        }
+    }
+    
+    function downloadPayslip() {
+        const selected = document.getElementById('pay-period-select').value;
+        if (!selected) {
+            alert('Please select a pay period first.');
+        }
+    }
+    
+    function printPayslip() {
+        window.print();
+    }
+</script>
+{% endblock %}
