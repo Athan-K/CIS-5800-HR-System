@@ -1,0 +1,32 @@
+{% extends "emails/base_email.html" %}
+
+{% block title %}Welcome to Ethos HRMS{% endblock %}
+
+{% block content %}
+<p>Hi {{ employee.first_name }},</p>
+
+<p>Welcome to Ethos HRMS! Your account has been created.</p>
+
+<div class="details-box">
+    <div class="details-row">
+        <span class="details-label">Email</span>
+        <span class="details-value">{{ employee.user.email }}</span>
+    </div>
+    <div class="details-row">
+        <span class="details-label">Temporary Password</span>
+        <span class="details-value" style="font-family: monospace; background: #fee2e2; padding: 2px 8px; border-radius: 4px;">{{ password }}</span>
+    </div>
+    <div class="details-row">
+        <span class="details-label">Employee ID</span>
+        <span class="details-value">{{ employee.employee_id }}</span>
+    </div>
+</div>
+
+<p style="color: #dc2626; font-weight: 500;">⚠️ Please change your password after your first login.</p>
+
+<a href="{{ login_url }}" class="button">Log In Now</a>
+
+<p style="margin-top: 24px; font-size: 14px; color: #6b7280;">
+    If you have any questions, please contact your HR department.
+</p>
+{% endblock %}

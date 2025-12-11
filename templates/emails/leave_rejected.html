@@ -1,0 +1,36 @@
+{% extends "emails/base_email.html" %}
+
+{% block title %}Leave Request Update{% endblock %}
+
+{% block content %}
+<p>Hi {{ employee.first_name }},</p>
+
+<span class="status-badge status-rejected">✗ Rejected</span>
+
+<p>Unfortunately, your leave request has been rejected.</p>
+
+<div class="details-box">
+    <div class="details-row">
+        <span class="details-label">Leave Type</span>
+        <span class="details-value">{{ leave_request.get_leave_type_display }}</span>
+    </div>
+    <div class="details-row">
+        <span class="details-label">Start Date</span>
+        <span class="details-value">{{ leave_request.start_date|date:"F d, Y" }}</span>
+    </div>
+    <div class="details-row">
+        <span class="details-label">End Date</span>
+        <span class="details-value">{{ leave_request.end_date|date:"F d, Y" }}</span>
+    </div>
+    {% if leave_request.manager_notes %}
+    <div class="details-row">
+        <span class="details-label">Reason</span>
+        <span class="details-value">{{ leave_request.manager_notes }}</span>
+    </div>
+    {% endif %}
+</div>
+
+<p>If you have questions, please contact your HR department.</p>
+
+<a href="http://127.0.0.1:8000/employee/leave/" class="button">View in HRMS</a>
+{% endblock %}

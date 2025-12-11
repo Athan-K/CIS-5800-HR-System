@@ -1,6 +1,6 @@
 from django.contrib import admin
 from simple_history.admin import SimpleHistoryAdmin
-from .models import Department, Employee, Attendance, Payslip, LeaveRequest
+from .models import Department, Employee, Attendance, Payslip, LeaveRequest, AttendanceCorrection
 
 
 @admin.register(Department)
@@ -35,4 +35,10 @@ class PayslipAdmin(SimpleHistoryAdmin):
 class LeaveRequestAdmin(SimpleHistoryAdmin):
     list_display = ('employee', 'leave_type', 'start_date', 'end_date', 'status')
     list_filter = ('status', 'leave_type')
+    search_fields = ('employee__first_name', 'employee__last_name')
+
+@admin.register(AttendanceCorrection)
+class AttendanceCorrectionAdmin(SimpleHistoryAdmin):
+    list_display = ('employee', 'date', 'status', 'submitted_at')
+    list_filter = ('status', 'submitted_at')
     search_fields = ('employee__first_name', 'employee__last_name')

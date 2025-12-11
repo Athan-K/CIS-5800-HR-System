@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block title %}Setup Two-Factor Authentication - Ethos HRMS{% endblock %}
+
+{% block navigation %}
+{% if user.is_hr %}
+{% include "components/navbar_hr.html" %}
+{% else %}
+{% include "components/navbar_employee.html" %}
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto">
+    <div class="bg-white rounded-xl shadow-lg p-8">
+        <h2 class="text-2xl font-bold text-gray-800 mb-2">Setup Two-Factor Authentication</h2>
+        <p class="text-gray-600 mb-6">Secure your account with an authenticator app.</p>
+        
+        <!-- Messages -->
+        {% if messages %}
+        <div class="mb-6">
+            {% for message in messages %}
+            <div class="p-4 rounded-lg {% if message.tags == 'success' %}bg-green-100 text-green-800{% elif message.tags == 'error' %}bg-red-100 text-red-800{% else %}bg-blue-100 text-blue-800{% endif %}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        <!-- Step 1: Install App -->
+        <div class="mb-6">
+            <h3 class="font-semibold text-gray-800 mb-2">Step 1: Install an Authenticator App</h3>
+            <p class="text-sm text-gray-600 mb-3">Download one of these apps on your phone:</p>
+            <div class="flex gap-4">
+                <div class="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-lg">
+                    <svg class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                    </svg>
+                    <span class="text-sm font-medium">Google Authenticator</span>
+                </div>
+                <div class="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-lg">
+                    <svg class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                    </svg>
+                    <span class="text-sm font-medium">Authy</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Step 2: Scan QR Code -->
+        <div class="mb-6">
+            <h3 class="font-semibold text-gray-800 mb-2">Step 2: Scan QR Code</h3>
+            <p class="text-sm text-gray-600 mb-4">Open your authenticator app and scan this QR code:</p>
+            
+            <div class="flex justify-center mb-4">
+                <div class="p-4 bg-white border-2 border-gray-200 rounded-lg">
+                    <img src="{{ qr_code }}" alt="QR Code" class="w-48 h-48">
+                </div>
+            </div>
+            
+            <!-- Manual Entry -->
+            <div class="bg-gray-50 rounded-lg p-4">
+                <p class="text-sm text-gray-600 mb-2">Can't scan? Enter this code manually:</p>
+                <div class="flex items-center gap-2">
+                    <code class="flex-1 px-3 py-2 bg-white border border-gray-300 rounded font-mono text-sm break-all">
+                        {{ secret_key }}
+                    </code>
+                    <button onclick="copySecret()" class="px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded text-sm">
+                        Copy
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Step 3: Verify -->
+        <div class="mb-6">
+            <h3 class="font-semibold text-gray-800 mb-2">Step 3: Verify Setup</h3>
+            <p class="text-sm text-gray-600 mb-4">Enter the 6-digit code from your authenticator app:</p>
+            
+            <form method="post">
+                {% csrf_token %}
+                <div class="flex gap-3">
+                    <input type="text" name="token" 
+                           class="flex-1 px-4 py-3 border border-gray-300 rounded-lg text-center text-2xl font-mono tracking-widest"
+                           placeholder="000000"
+                           maxlength="6"
+                           pattern="[0-9]{6}"
+                           autocomplete="one-time-code"
+                           required>
+                    <button type="submit" 
+                            class="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium">
+                        Verify & Enable
+                    </button>
+                </div>
+            </form>
+        </div>
+        
+        <div class="text-center">
+            <a href="{% if user.is_hr %}{% url 'hr:settings' %}{% else %}{% url 'employees:settings' %}{% endif %}" 
+               class="text-gray-600 hover:text-gray-800 text-sm">
+                ← Back to Settings
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+function copySecret() {
+    const secret = "{{ secret_key }}";
+    navigator.clipboard.writeText(secret).then(function() {
+        alert('Secret key copied to clipboard!');
+    });
+}
+</script>
+{% endblock %}

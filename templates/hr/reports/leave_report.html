@@ -1,0 +1,101 @@
+<div class="p-4">
+    <h3 class="text-lg font-bold text-gray-800 mb-4">Leave Report</h3>
+    
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-4 gap-4 mb-6">
+        <div class="bg-gray-50 rounded-lg p-4 text-center">
+            <p class="text-2xl font-bold text-gray-600">{{ total_requests }}</p>
+            <p class="text-sm text-gray-600">Total Requests</p>
+        </div>
+        <div class="bg-yellow-50 rounded-lg p-4 text-center">
+            <p class="text-2xl font-bold text-yellow-600">{{ pending }}</p>
+            <p class="text-sm text-gray-600">Pending</p>
+        </div>
+        <div class="bg-green-50 rounded-lg p-4 text-center">
+            <p class="text-2xl font-bold text-green-600">{{ approved }}</p>
+            <p class="text-sm text-gray-600">Approved</p>
+        </div>
+        <div class="bg-red-50 rounded-lg p-4 text-center">
+            <p class="text-2xl font-bold text-red-600">{{ rejected }}</p>
+            <p class="text-sm text-gray-600">Rejected</p>
+        </div>
+    </div>
+    
+    <!-- Charts -->
+    <div class="grid grid-cols-2 gap-4 mb-6">
+        <div class="h-48">
+            <p class="text-sm font-medium text-gray-700 mb-2">By Leave Type</p>
+            <canvas id="leaveTypeChart"></canvas>
+        </div>
+        <div class="h-48">
+            <p class="text-sm font-medium text-gray-700 mb-2">By Status</p>
+            <canvas id="leaveStatusChart"></canvas>
+        </div>
+    </div>
+    
+    <!-- Recent Requests -->
+    <h4 class="font-semibold text-gray-700 mb-2">Recent Requests</h4>
+    <table class="w-full">
+        <thead class="bg-gray-100">
+            <tr>
+                <th class="px-4 py-2 text-left text-sm font-semibold">Employee</th>
+                <th class="px-4 py-2 text-left text-sm font-semibold">Type</th>
+                <th class="px-4 py-2 text-left text-sm font-semibold">Dates</th>
+                <th class="px-4 py-2 text-left text-sm font-semibold">Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for leave in recent_requests %}
+            <tr class="border-b">
+                <td class="px-4 py-2 text-sm">{{ leave.employee.full_name }}</td>
+                <td class="px-4 py-2 text-sm capitalize">{{ leave.leave_type }}</td>
+                <td class="px-4 py-2 text-sm">{{ leave.start_date|date:"M d" }} - {{ leave.end_date|date:"M d" }}</td>
+                <td class="px-4 py-2 text-sm">
+                    <span class="px-2 py-1 rounded-full text-xs 
+                        {% if leave.status == 'pending' %}bg-yellow-100 text-yellow-800
+                        {% elif leave.status == 'approved' %}bg-green-100 text-green-800
+                        {% else %}bg-red-100 text-red-800{% endif %}">
+                        {{ leave.status|title }}
+                    </span>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="px-4 py-4 text-center text-gray-500">No requests found.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+    new Chart(document.getElementById('leaveTypeChart'), {
+        type: 'doughnut',
+        data: {
+            labels: {{ type_labels|safe }},
+            datasets: [{
+                data: {{ type_counts|safe }},
+                backgroundColor: ['#22c55e', '#3b82f6', '#8b5cf6', '#eab308', '#ef4444']
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } }
+        }
+    });
+    
+    new Chart(document.getElementById('leaveStatusChart'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Pending', 'Approved', 'Rejected'],
+            datasets: [{
+                data: [{{ pending }}, {{ approved }}, {{ rejected }}],
+                backgroundColor: ['#eab308', '#22c55e', '#ef4444']
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } }
+        }
+    });
+</script>

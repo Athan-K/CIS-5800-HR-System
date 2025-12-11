@@ -1,0 +1,98 @@
+{% load employee_filters %}
+
+<!-- Month Header with Navigation -->
+<div class="flex items-center justify-between mb-3">
+    <button hx-get="{% url 'employees:attendance_calendar' %}?year={{ year }}&month={{ month|add:'-1' }}"
+            hx-target="#attendance-calendar"
+            hx-swap="innerHTML"
+            class="p-1 hover:bg-gray-200 rounded">
+        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+        </svg>
+    </button>
+    <p class="text-lg font-semibold text-gray-700">{{ current_month }}</p>
+    <button hx-get="{% url 'employees:attendance_calendar' %}?year={{ year }}&month={{ month|add:'1' }}"
+            hx-target="#attendance-calendar"
+            hx-swap="innerHTML"
+            class="p-1 hover:bg-gray-200 rounded">
+        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+        </svg>
+    </button>
+</div>
+
+<!-- Calendar -->
+<div class="bg-white rounded-lg p-3 mb-4">
+    <!-- Day Headers -->
+    <div class="grid grid-cols-7 gap-1 mb-2">
+        <div class="text-center text-xs font-medium text-gray-500">Sun</div>
+        <div class="text-center text-xs font-medium text-gray-500">Mon</div>
+        <div class="text-center text-xs font-medium text-gray-500">Tue</div>
+        <div class="text-center text-xs font-medium text-gray-500">Wed</div>
+        <div class="text-center text-xs font-medium text-gray-500">Thu</div>
+        <div class="text-center text-xs font-medium text-gray-500">Fri</div>
+        <div class="text-center text-xs font-medium text-gray-500">Sat</div>
+    </div>
+    
+    <!-- Calendar Days -->
+    {% for week in calendar_weeks %}
+    <div class="grid grid-cols-7 gap-1 mb-1">
+        {% for day in week %}
+        <div class="aspect-square flex items-center justify-center text-xs rounded cursor-default
+            {% if day == 0 %}
+                {# Empty cell #}
+            {% elif day == today %}
+                ring-2 ring-green-500 font-bold
+            {% endif %}
+            {% if day != 0 %}
+                {% with attendance=attendance_dict|get_item:day %}
+                    {% if attendance.status == 'present' %}
+                        bg-green-100 text-green-800 hover:bg-green-200
+                    {% elif attendance.status == 'late' %}
+                        bg-yellow-100 text-yellow-800 hover:bg-yellow-200
+                    {% elif attendance.status == 'absent' %}
+                        bg-red-100 text-red-800 hover:bg-red-200
+                    {% elif attendance.status == 'on_leave' %}
+                        bg-blue-100 text-blue-800 hover:bg-blue-200
+                    {% elif attendance.status == 'half_day' %}
+                        bg-purple-100 text-purple-800 hover:bg-purple-200
+                    {% else %}
+                        bg-gray-50 text-gray-400
+                    {% endif %}
+                {% endwith %}
+            {% endif %}
+        "
+        {% if day != 0 %}
+            {% with attendance=attendance_dict|get_item:day %}
+                {% if attendance %}
+                    title="{{ attendance.get_status_display }}: {{ attendance.time_in|default:'--' }} - {{ attendance.time_out|default:'--' }}"
+                {% endif %}
+            {% endwith %}
+        {% endif %}
+        >
+            {% if day != 0 %}{{ day }}{% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Legend with Stats -->
+<div class="flex flex-wrap gap-3 text-xs justify-center">
+    <div class="flex items-center gap-1">
+        <div class="w-3 h-3 rounded bg-green-100 border border-green-300"></div>
+        <span>Present ({{ monthly_stats.present }})</span>
+    </div>
+    <div class="flex items-center gap-1">
+        <div class="w-3 h-3 rounded bg-yellow-100 border border-yellow-300"></div>
+        <span>Late ({{ monthly_stats.late }})</span>
+    </div>
+    <div class="flex items-center gap-1">
+        <div class="w-3 h-3 rounded bg-red-100 border border-red-300"></div>
+        <span>Absent ({{ monthly_stats.absent }})</span>
+    </div>
+    <div class="flex items-center gap-1">
+        <div class="w-3 h-3 rounded bg-blue-100 border border-blue-300"></div>
+        <span>Leave ({{ monthly_stats.on_leave }})</span>
+    </div>
+</div>

@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Notifications - Ethos HRMS{% endblock %}
+
+{% block navigation %}
+{% include "components/navbar_employee.html" %}
+{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h2 class="text-xl font-semibold text-gray-800">Notifications</h2>
+            {% if unread_count > 0 %}
+            <p class="text-sm text-gray-600">{{ unread_count }} unread notification{{ unread_count|pluralize }}</p>
+            {% endif %}
+        </div>
+        {% if unread_count > 0 %}
+        <a href="?mark_read=1" class="text-sm text-green-600 hover:text-green-700">
+            Mark all as read
+        </a>
+        {% endif %}
+    </div>
+    
+    <div class="bg-white rounded-xl shadow overflow-hidden">
+        {% for notification in notifications %}
+        <a href="{% url 'employees:mark_notification_read' notification.pk %}" 
+           class="block p-4 border-b border-gray-100 hover:bg-gray-50 {% if not notification.is_read %}bg-green-50{% endif %}">
+            <div class="flex items-start gap-4">
+                <div class="flex-shrink-0">
+                    {% if 'approved' in notification.notification_type %}
+                    <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                        <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                    </div>
+                    {% elif 'rejected' in notification.notification_type %}
+                    <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                        <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </div>
+                    {% else %}
+                    <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                        </svg>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-gray-900 {% if not notification.is_read %}font-semibold{% endif %}">
+                        {{ notification.title }}
+                    </p>
+                    <p class="text-sm text-gray-600 mt-1">{{ notification.message }}</p>
+                    <p class="text-xs text-gray-400 mt-2">{{ notification.created_at|timesince }} ago</p>
+                </div>
+                {% if not notification.is_read %}
+                <div class="flex-shrink-0">
+                    <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                </div>
+                {% endif %}
+            </div>
+        </a>
+        {% empty %}
+        <div class="p-12 text-center">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+            </svg>
+            <h3 class="mt-2 text-sm font-medium text-gray-900">No notifications</h3>
+            <p class="mt-1 text-sm text-gray-500">You're all caught up!</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

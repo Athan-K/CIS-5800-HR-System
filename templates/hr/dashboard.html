@@ -7,114 +7,219 @@
 {% endblock %}
 
 {% block content %}
-<div class="max-w-6xl mx-auto">
-    <h2 class="text-lg font-medium text-gray-700 mb-6">Dashboard</h2>
+<div class="max-w-7xl mx-auto">
+    <h2 class="text-2xl font-bold text-gray-800 mb-6">HR Dashboard</h2>
     
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <!-- Total Employees Card -->
-        <div class="bg-white rounded-xl shadow-lg p-6 border-t-4 border-green-500">
-            <h3 class="text-sm font-medium text-gray-500 mb-2">Total Employees</h3>
-            <p class="text-4xl font-bold text-gray-800">{{ total_employees }}</p>
-            <p class="text-xs text-gray-400 mt-2">Active employees</p>
-        </div>
-        
-        <!-- On Leave Card -->
-        <div class="bg-white rounded-xl shadow-lg p-6 border-t-4 border-blue-500">
-            <h3 class="text-sm font-medium text-gray-500 mb-2">On Leave</h3>
-            <p class="text-4xl font-bold text-gray-800">{{ on_leave }}</p>
-            <p class="text-xs text-gray-400 mt-2">Currently on leave</p>
-        </div>
-        
-        <!-- Pending Requests Card -->
-        <div class="bg-white rounded-xl shadow-lg p-6 border-t-4 border-yellow-500">
-            <h3 class="text-sm font-medium text-gray-500 mb-2">Pending Requests</h3>
-            <p class="text-4xl font-bold text-gray-800">{{ pending_requests|length }}</p>
-            <p class="text-xs text-gray-400 mt-2">Awaiting review</p>
-        </div>
-        
-        <!-- Departments Card -->
-        <div class="bg-white rounded-xl shadow-lg p-6 border-t-4 border-purple-500">
-            <h3 class="text-sm font-medium text-gray-500 mb-2">Departments</h3>
-            <p class="text-4xl font-bold text-gray-800">{{ departments|length }}</p>
-            <p class="text-xs text-gray-400 mt-2">Active departments</p>
-        </div>
-    </div>
-    
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- Departments Breakdown -->
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
         <div class="bg-white rounded-xl shadow-lg p-6">
-            <h3 class="text-lg font-semibold text-gray-800 mb-4">Departments</h3>
-            <div class="space-y-3">
-                {% for dept in departments %}
-                <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                    <span class="text-sm font-medium text-gray-700">{{ dept.name }}</span>
-                    <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">
-                        {{ dept.employee_count }} employees
-                    </span>
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500">Total Employees</p>
+                    <p class="text-3xl font-bold text-gray-800">{{ total_employees }}</p>
                 </div>
-                {% empty %}
-                <p class="text-gray-500 text-sm">No departments configured.</p>
-                {% endfor %}
+                <div class="p-3 bg-green-100 rounded-full">
+                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                </div>
             </div>
         </div>
         
-        <!-- Notifications / Pending Requests -->
         <div class="bg-white rounded-xl shadow-lg p-6">
-            <h3 class="text-lg font-semibold text-gray-800 mb-4">Notifications</h3>
-            <div class="space-y-3">
-                {% for request in pending_requests %}
-                <div class="flex items-start gap-3 p-3 bg-yellow-50 rounded-lg border-l-4 border-yellow-400">
-                    <div class="flex-1">
-                        <p class="text-sm font-medium text-gray-800">
-                            {{ request.employee.full_name }} - Leave Request
-                        </p>
-                        <p class="text-xs text-gray-500">
-                            {{ request.get_leave_type_display }}: 
-                            {{ request.start_date|date:"M d" }} - {{ request.end_date|date:"M d" }}
-                        </p>
-                    </div>
-                    <a href="{% url 'hr:leave_review' request.id %}" class="text-xs text-blue-600 hover:text-blue-800">
-  Review
-</a>
-
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500">On Leave</p>
+                    <p class="text-3xl font-bold text-blue-600">{{ on_leave }}</p>
                 </div>
-                {% empty %}
+                <div class="p-3 bg-blue-100 rounded-full">
+                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow-lg p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500">Pending Leave Requests</p>
+                    <p class="text-3xl font-bold text-yellow-600">{{ pending_leave_count }}</p>
+                </div>
+                <div class="p-3 bg-yellow-100 rounded-full">
+                    <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow-lg p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500">Pending Corrections</p>
+                    <p class="text-3xl font-bold text-purple-600">{{ pending_correction_count }}</p>
+                </div>
+                <div class="p-3 bg-purple-100 rounded-full">
+                    <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Notifications Panel -->
+        <div class="lg:col-span-2 space-y-6">
+            
+            <!-- Pending Leave Requests -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-gray-800">
+                        Pending Leave Requests
+                        {% if pending_leave_count > 0 %}
+                        <span class="ml-2 px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">{{ pending_leave_count }}</span>
+                        {% endif %}
+                    </h3>
+                    <a href="{% url 'hr:leave_requests' %}?status=pending" class="text-green-600 hover:text-green-700 text-sm">View All →</a>
+                </div>
+                
+                {% if pending_leave_requests %}
+                <div class="space-y-3">
+                    {% for request in pending_leave_requests %}
+                    <div class="flex items-center justify-between p-4 bg-yellow-50 border border-yellow-100 rounded-lg">
+                        <div class="flex-1">
+                            <p class="font-medium text-gray-800">{{ request.employee.full_name }}</p>
+                            <p class="text-sm text-gray-600">
+                                {{ request.get_leave_type_display }} • {{ request.start_date|date:"M d" }} - {{ request.end_date|date:"M d" }}
+                                <span class="text-gray-400">({{ request.days_requested }} days)</span>
+                            </p>
+                        </div>
+                        <div class="flex gap-2">
+                            <form method="post" action="{% url 'hr:approve_leave' request.pk %}">
+                                {% csrf_token %}
+                                <button type="submit" class="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs">
+                                    Approve
+                                </button>
+                            </form>
+                            <form method="post" action="{% url 'hr:reject_leave' request.pk %}">
+                                {% csrf_token %}
+                                <button type="submit" class="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-xs">
+                                    Reject
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
                 <div class="text-center py-8 text-gray-500">
-                    <svg class="w-12 h-12 mx-auto mb-2 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="mx-auto h-12 w-12 text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
-                    <p class="text-sm">No pending notifications</p>
+                    <p>No pending leave requests</p>
                 </div>
-                {% endfor %}
+                {% endif %}
+            </div>
+            
+            <!-- Pending Attendance Corrections -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-gray-800">
+                        Attendance Corrections
+                        {% if pending_correction_count > 0 %}
+                        <span class="ml-2 px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full">{{ pending_correction_count }}</span>
+                        {% endif %}
+                    </h3>
+                    <a href="{% url 'hr:attendance_corrections' %}?status=pending" class="text-green-600 hover:text-green-700 text-sm">View All →</a>
+                </div>
+                
+                {% if pending_corrections %}
+                <div class="space-y-3">
+                    {% for correction in pending_corrections %}
+                    <div class="flex items-center justify-between p-4 bg-purple-50 border border-purple-100 rounded-lg">
+                        <div class="flex-1">
+                            <p class="font-medium text-gray-800">{{ correction.employee.full_name }}</p>
+                            <p class="text-sm text-gray-600">
+                                {{ correction.date|date:"M d, Y" }} • 
+                                Requested: {{ correction.requested_time_in|time:"H:i"|default:"--" }} - {{ correction.requested_time_out|time:"H:i"|default:"--" }}
+                            </p>
+                            <p class="text-xs text-gray-500 mt-1">{{ correction.reason|truncatewords:15 }}</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <form method="post" action="{% url 'hr:approve_correction' correction.pk %}">
+                                {% csrf_token %}
+                                <button type="submit" class="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs">
+                                    Approve
+                                </button>
+                            </form>
+                            <form method="post" action="{% url 'hr:reject_correction' correction.pk %}">
+                                {% csrf_token %}
+                                <button type="submit" class="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-xs">
+                                    Reject
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-8 text-gray-500">
+                    <svg class="mx-auto h-12 w-12 text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <p>No pending corrections</p>
+                </div>
+                {% endif %}
             </div>
         </div>
-    </div>
-    
-    <!-- Quick Actions -->
-    <!-- Quick Actions -->
-<div class="mt-6 bg-white rounded-xl shadow-lg p-6">
-    <h3 class="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h3>
-    <div class="flex flex-wrap gap-3">
-        <a href="{% url 'hr:employee_create' %}" 
-           class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm transition">
-            + Add Employee
-        </a>
-        <a href="{% url 'hr:department_create' %}" 
-           class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition">
-            + Add Department
-        </a>
-        <a href="{% url 'hr:employee_list' %}" 
-           class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-sm transition">
-            View All Employees
-        </a>
-        <a href="{% url 'hr:department_list' %}" 
-           class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-sm transition">
-            View Departments
-        </a>
-        <a href="{% url 'hr:reports' %}" 
-           class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-sm transition">
-            Generate Report
-        </a>
+        
+        <!-- Right Sidebar -->
+        <div class="space-y-6">
+            <!-- Department Breakdown -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Departments</h3>
+                <div class="space-y-3">
+                    {% for dept in departments %}
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600">{{ dept.name }}</span>
+                        <span class="px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded-full">{{ dept.employee_count }}</span>
+                    </div>
+                    {% empty %}
+                    <p class="text-gray-500 text-sm">No departments found</p>
+                    {% endfor %}
+                </div>
+                <div class="mt-4 pt-4 border-t">
+                    <a href="{% url 'hr:department_list' %}" class="text-green-600 hover:text-green-700 text-sm">
+                        Manage Departments →
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Quick Actions -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h3>
+                <div class="space-y-2">
+                    <a href="{% url 'hr:employee_create' %}" 
+                       class="block w-full px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm text-center transition">
+                        + Add Employee
+                    </a>
+                    <a href="{% url 'hr:department_create' %}" 
+                       class="block w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm text-center transition">
+                        + Add Department
+                    </a>
+                    <a href="{% url 'hr:employee_list' %}" 
+                       class="block w-full px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-sm text-center transition">
+                        View All Employees
+                    </a>
+                    <a href="{% url 'hr:reports' %}" 
+                       class="block w-full px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-sm text-center transition">
+                        Generate Reports
+                    </a>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}

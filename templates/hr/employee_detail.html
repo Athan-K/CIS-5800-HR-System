@@ -1,0 +1,546 @@
+{% extends "base.html" %}
+
+{% block title %}{{ employee.full_name }} - Ethos HRMS{% endblock %}
+
+{% block navigation %}
+{% include "components/navbar_hr.html" %}
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <!-- Back Button -->
+    <div class="mb-4">
+        <a href="{% url 'hr:employee_list' %}" class="text-gray-600 hover:text-gray-800 text-sm flex items-center gap-1">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+            Back to Employees
+        </a>
+    </div>
+    
+    <!-- Profile Header -->
+    <div class="bg-white rounded-xl shadow-lg overflow-hidden mb-6">
+        <div class="bg-gradient-to-r from-green-600 to-green-700 px-8 py-6">
+            <div class="flex items-center gap-6">
+                <!-- Avatar -->
+                <div class="w-24 h-24 bg-white rounded-full flex items-center justify-center text-3xl font-bold text-green-600 shadow-lg">
+                    {{ employee.first_name.0 }}{{ employee.last_name.0 }}
+                </div>
+                
+                <!-- Basic Info -->
+                <div class="flex-1 text-white">
+                    <h1 class="text-3xl font-bold">{{ employee.full_name }}</h1>
+                    <p class="text-green-100 text-lg">{{ employee.job_title }}</p>
+                    <div class="flex items-center gap-4 mt-2 text-green-100 text-sm">
+                        <span>{{ employee.department.name }}</span>
+                        <span>•</span>
+                        <span>{{ employee.employee_id }}</span>
+                        <span>•</span>
+                        <span class="px-2 py-0.5 rounded-full text-xs font-medium
+                            {% if employee.status == 'active' %}bg-green-500 text-white
+                            {% elif employee.status == 'on_leave' %}bg-blue-500 text-white
+                            {% else %}bg-red-500 text-white{% endif %}">
+                            {{ employee.get_status_display }}
+                        </span>
+                    </div>
+                </div>
+                
+                <!-- Quick Actions -->
+                <div class="flex gap-2">
+                    <a href="{% url 'hr:employee_update' employee.pk %}" 
+                       class="px-4 py-2 bg-white text-green-600 rounded-lg text-sm font-medium hover:bg-green-50">
+                        Edit Profile
+                    </a>
+                    <a href="mailto:{{ employee.user.email }}" 
+                       class="px-4 py-2 bg-green-500 text-white rounded-lg text-sm font-medium hover:bg-green-400">
+                        Send Email
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tab Navigation -->
+        <div class="border-b border-gray-200">
+            <nav class="flex px-8" id="profile-tabs">
+                <button onclick="showTab('overview')" 
+                        class="tab-btn active px-4 py-4 text-sm font-medium border-b-2 border-green-500 text-green-600"
+                        data-tab="overview">
+                    Overview
+                </button>
+                <button onclick="showTab('attendance')" 
+                        class="tab-btn px-4 py-4 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700"
+                        data-tab="attendance">
+                    Attendance
+                </button>
+                <button onclick="showTab('leave')" 
+                        class="tab-btn px-4 py-4 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 flex items-center gap-2"
+                        data-tab="leave">
+                    Leave
+                    {% if pending_leave_count > 0 %}
+                    <span class="px-2 py-0.5 bg-yellow-100 text-yellow-800 rounded-full text-xs">{{ pending_leave_count }}</span>
+                    {% endif %}
+                </button>
+                <button onclick="showTab('payroll')" 
+                        class="tab-btn px-4 py-4 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700"
+                        data-tab="payroll">
+                    Payroll
+                </button>
+                <button onclick="showTab('history')" 
+                        class="tab-btn px-4 py-4 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700"
+                        data-tab="history">
+                    History
+                </button>
+            </nav>
+        </div>
+    </div>
+    
+    <!-- Tab Contents -->
+    
+    <!-- Overview Tab -->
+    <div id="tab-overview" class="tab-content">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Personal Information -->
+            <div class="lg:col-span-2 space-y-6">
+                <div class="bg-white rounded-xl shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Personal Information</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-xs text-gray-500 uppercase tracking-wide">Full Name</label>
+                            <p class="text-gray-800 font-medium">{{ employee.full_name }}</p>
+                        </div>
+                        <div>
+                            <label class="text-xs text-gray-500 uppercase tracking-wide">Email</label>
+                            <p class="text-gray-800">{{ employee.user.email }}</p>
+                        </div>
+                        <div>
+                            <label class="text-xs text-gray-500 uppercase tracking-wide">Phone</label>
+                            <p class="text-gray-800">{{ employee.phone|default:"Not provided" }}</p>
+                        </div>
+                        <div>
+                            <label class="text-xs text-gray-500 uppercase tracking-wide">Date of Birth</label>
+                            <p class="text-gray-800">{{ employee.date_of_birth|date:"M d, Y"|default:"Not provided" }}</p>
+                        </div>
+                        <div class="col-span-2">
+                            <label class="text-xs text-gray-500 uppercase tracking-wide">Address</label>
+                            <p class="text-gray-800">{{ employee.address|default:"Not provided" }}</p>
+                        </div>
+                        <div>
+                            <label class="text-xs text-gray-500 uppercase tracking-wide">Emergency Contact</label>
+                            <p class="text-gray-800">{{ employee.emergency_contact_name|default:"Not provided" }}</p>
+                        </div>
+                        <div>
+                            <label class="text-xs text-gray-500 uppercase tracking-wide">Emergency Phone</label>
+                            <p class="text-gray-800">{{ employee.emergency_contact_phone|default:"Not provided" }}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-xl shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Employment Details</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-xs text-gray-500 uppercase tracking-wide">Employee ID</label>
+                            <p class="text-gray-800 font-medium">{{ employee.employee_id }}</p>
+                        </div>
+                        <div>
+                            <label class="text-xs text-gray-500 uppercase tracking-wide">Department</label>
+                            <p class="text-gray-800">{{ employee.department.name }}</p>
+                        </div>
+                        <div>
+                            <label class="text-xs text-gray-500 uppercase tracking-wide">Job Title</label>
+                            <p class="text-gray-800">{{ employee.job_title }}</p>
+                        </div>
+                        <div>
+                            <label class="text-xs text-gray-500 uppercase tracking-wide">Role</label>
+                            <p class="text-gray-800 capitalize">{{ employee.user.role }}</p>
+                        </div>
+                        <div>
+                            <label class="text-xs text-gray-500 uppercase tracking-wide">Start Date</label>
+                            <p class="text-gray-800">{{ employee.start_date|date:"M d, Y" }}</p>
+                        </div>
+                        <div>
+                            <label class="text-xs text-gray-500 uppercase tracking-wide">Manager</label>
+                            <p class="text-gray-800">{{ employee.manager.full_name|default:"None assigned" }}</p>
+                        </div>
+                        <div>
+                            <label class="text-xs text-gray-500 uppercase tracking-wide">Salary</label>
+                            <p class="text-gray-800 font-medium">${{ employee.salary|floatformat:0 }}/year</p>
+                        </div>
+                        <div>
+                            <label class="text-xs text-gray-500 uppercase tracking-wide">Status</label>
+                            <p class="text-gray-800 capitalize">{{ employee.get_status_display }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Sidebar -->
+            <div class="space-y-6">
+                <!-- Leave Balances -->
+                <div class="bg-white rounded-xl shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Leave Balances</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-600">Annual Leave</span>
+                            <span class="font-bold text-green-600">{{ leave_balances.annual }} days</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-green-500 h-2 rounded-full" style="width: {% widthratio leave_balances.annual 15 100 %}%"></div>
+                        </div>
+                        
+                        <div class="flex justify-between items-center mt-4">
+                            <span class="text-gray-600">Vacation</span>
+                            <span class="font-bold text-blue-600">{{ leave_balances.vacation }} days</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-blue-500 h-2 rounded-full" style="width: {% widthratio leave_balances.vacation 10 100 %}%"></div>
+                        </div>
+                        
+                        <div class="flex justify-between items-center mt-4">
+                            <span class="text-gray-600">Sick Leave</span>
+                            <span class="font-bold text-purple-600">{{ leave_balances.sick }} days</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-purple-500 h-2 rounded-full" style="width: {% widthratio leave_balances.sick 10 100 %}%"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Attendance Summary -->
+                <div class="bg-white rounded-xl shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Attendance (30 days)</h3>
+                    <div class="text-center mb-4">
+                        <p class="text-4xl font-bold text-green-600">{{ attendance_stats.attendance_rate }}%</p>
+                        <p class="text-sm text-gray-500">Attendance Rate</p>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2 text-center text-sm">
+                        <div class="p-2 bg-green-50 rounded">
+                            <p class="font-bold text-green-600">{{ attendance_stats.present }}</p>
+                            <p class="text-xs text-gray-500">Present</p>
+                        </div>
+                        <div class="p-2 bg-yellow-50 rounded">
+                            <p class="font-bold text-yellow-600">{{ attendance_stats.late }}</p>
+                            <p class="text-xs text-gray-500">Late</p>
+                        </div>
+                        <div class="p-2 bg-red-50 rounded">
+                            <p class="font-bold text-red-600">{{ attendance_stats.absent }}</p>
+                            <p class="text-xs text-gray-500">Absent</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Pending Requests -->
+                {% if pending_leaves %}
+                <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-6">
+                    <h3 class="text-lg font-semibold text-yellow-800 mb-4">Pending Requests</h3>
+                    <div class="space-y-2">
+                        {% for leave in pending_leaves %}
+                        <div class="bg-white p-3 rounded-lg">
+                            <p class="font-medium text-gray-800">{{ leave.get_leave_type_display }}</p>
+                            <p class="text-sm text-gray-600">{{ leave.start_date|date:"M d" }} - {{ leave.end_date|date:"M d" }}</p>
+                            <div class="flex gap-2 mt-2">
+                                <form method="post" action="{% url 'hr:approve_leave' leave.pk %}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="px-2 py-1 bg-green-600 text-white text-xs rounded">Approve</button>
+                                </form>
+                                <form method="post" action="{% url 'hr:reject_leave' leave.pk %}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="px-2 py-1 bg-red-600 text-white text-xs rounded">Reject</button>
+                                </form>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Attendance Tab -->
+    <div id="tab-attendance" class="tab-content hidden">
+        <div class="bg-white rounded-xl shadow overflow-hidden">
+            <div class="p-6 border-b">
+                <h3 class="text-lg font-semibold text-gray-800">Attendance Records (Last 30 Days)</h3>
+            </div>
+            <table class="w-full">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Time In</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Time Out</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Hours</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    {% for record in recent_attendance %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 text-sm text-gray-800">{{ record.date|date:"M d, Y" }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-600">{{ record.time_in|time:"g:i A"|default:"--" }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-600">{{ record.time_out|time:"g:i A"|default:"--" }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-600">{{ record.hours_worked|floatformat:2|default:"--" }}</td>
+                        <td class="px-6 py-4">
+                            <span class="px-2 py-1 rounded-full text-xs font-medium
+                                {% if record.status == 'present' %}bg-green-100 text-green-800
+                                {% elif record.status == 'late' %}bg-yellow-100 text-yellow-800
+                                {% elif record.status == 'absent' %}bg-red-100 text-red-800
+                                {% elif record.status == 'on_leave' %}bg-blue-100 text-blue-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ record.get_status_display }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-8 text-center text-gray-500">No attendance records found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Attendance Corrections -->
+        {% if corrections %}
+        <div class="bg-white rounded-xl shadow overflow-hidden mt-6">
+            <div class="p-6 border-b">
+                <h3 class="text-lg font-semibold text-gray-800">Correction Requests</h3>
+            </div>
+            <table class="w-full">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Requested Change</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Reason</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    {% for correction in corrections %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 text-sm text-gray-800">{{ correction.date|date:"M d, Y" }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-600">
+                            {% if correction.requested_time_in or correction.requested_time_out %}
+                            {{ correction.requested_time_in|time:"g:i A"|default:"--" }} - {{ correction.requested_time_out|time:"g:i A"|default:"--" }}
+                            {% endif %}
+                            {% if correction.requested_status %}
+                            <span class="ml-2 px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded">→ {{ correction.requested_status|title }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-600 max-w-xs truncate">{{ correction.reason|truncatewords:8 }}</td>
+                        <td class="px-6 py-4">
+                            <span class="px-2 py-1 rounded-full text-xs font-medium
+                                {% if correction.status == 'pending' %}bg-yellow-100 text-yellow-800
+                                {% elif correction.status == 'approved' %}bg-green-100 text-green-800
+                                {% else %}bg-red-100 text-red-800{% endif %}">
+                                {{ correction.status|title }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4">
+                            {% if correction.status == 'pending' %}
+                            <div class="flex gap-2">
+                                <form method="post" action="{% url 'hr:approve_correction' correction.pk %}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="px-2 py-1 bg-green-600 text-white text-xs rounded">Approve</button>
+                                </form>
+                                <form method="post" action="{% url 'hr:reject_correction' correction.pk %}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="px-2 py-1 bg-red-600 text-white text-xs rounded">Reject</button>
+                                </form>
+                            </div>
+                            {% else %}
+                            <span class="text-xs text-gray-500">{{ correction.reviewed_at|date:"M d" }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Leave Tab -->
+    <div id="tab-leave" class="tab-content hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            <div class="bg-green-50 rounded-xl p-6 text-center">
+                <p class="text-3xl font-bold text-green-600">{{ leave_balances.annual }}</p>
+                <p class="text-gray-600">Annual Leave</p>
+            </div>
+            <div class="bg-blue-50 rounded-xl p-6 text-center">
+                <p class="text-3xl font-bold text-blue-600">{{ leave_balances.vacation }}</p>
+                <p class="text-gray-600">Vacation Days</p>
+            </div>
+            <div class="bg-purple-50 rounded-xl p-6 text-center">
+                <p class="text-3xl font-bold text-purple-600">{{ leave_balances.sick }}</p>
+                <p class="text-gray-600">Sick Leave</p>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow overflow-hidden">
+            <div class="p-6 border-b">
+                <h3 class="text-lg font-semibold text-gray-800">Leave Request History</h3>
+            </div>
+            <table class="w-full">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Dates</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Days</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Reason</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    {% for leave in leave_requests %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 text-sm text-gray-800 font-medium">{{ leave.get_leave_type_display }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-600">{{ leave.start_date|date:"M d" }} - {{ leave.end_date|date:"M d, Y" }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-600">{{ leave.days_requested }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-600 max-w-xs truncate">{{ leave.reason|default:"--"|truncatewords:8 }}</td>
+                        <td class="px-6 py-4">
+                            <span class="px-2 py-1 rounded-full text-xs font-medium
+                                {% if leave.status == 'pending' %}bg-yellow-100 text-yellow-800
+                                {% elif leave.status == 'approved' %}bg-green-100 text-green-800
+                                {% else %}bg-red-100 text-red-800{% endif %}">
+                                {{ leave.status|title }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4">
+                            {% if leave.status == 'pending' %}
+                            <div class="flex gap-2">
+                                <form method="post" action="{% url 'hr:approve_leave' leave.pk %}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="px-2 py-1 bg-green-600 text-white text-xs rounded">Approve</button>
+                                </form>
+                                <form method="post" action="{% url 'hr:reject_leave' leave.pk %}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="px-2 py-1 bg-red-600 text-white text-xs rounded">Reject</button>
+                                </form>
+                            </div>
+                            {% else %}
+                            <span class="text-xs text-gray-500">
+                                {% if leave.reviewed_by %}{{ leave.reviewed_by.full_name }}{% endif %}
+                            </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-8 text-center text-gray-500">No leave requests found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Payroll Tab -->
+    <div id="tab-payroll" class="tab-content hidden">
+        <div class="bg-white rounded-xl shadow p-6 mb-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Compensation</h3>
+            <div class="grid grid-cols-3 gap-6">
+                <div>
+                    <label class="text-xs text-gray-500 uppercase tracking-wide">Annual Salary</label>
+                    <p class="text-2xl font-bold text-gray-800">${{ employee.salary|floatformat:0 }}</p>
+                </div>
+                <div>
+                    <label class="text-xs text-gray-500 uppercase tracking-wide">Monthly</label>
+                    <p class="text-2xl font-bold text-gray-800">${{ employee.salary|divisibleby:12|floatformat:0 }}</p>
+                </div>
+                <div>
+                    <label class="text-xs text-gray-500 uppercase tracking-wide">Bi-Weekly</label>
+                    <p class="text-2xl font-bold text-gray-800">${{ employee.salary|divisibleby:26|floatformat:0 }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow overflow-hidden">
+            <div class="p-6 border-b">
+                <h3 class="text-lg font-semibold text-gray-800">Recent Payslips</h3>
+            </div>
+            <table class="w-full">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Pay Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Period</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Gross Pay</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Deductions</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Net Pay</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    {% for payslip in payslips %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 text-sm text-gray-800">{{ payslip.pay_date|date:"M d, Y" }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-600">{{ payslip.period_start|date:"M d" }} - {{ payslip.period_end|date:"M d" }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-600 text-right">${{ payslip.gross_pay|floatformat:2 }}</td>
+                        <td class="px-6 py-4 text-sm text-red-600 text-right">-${{ payslip.deductions|floatformat:2 }}</td>
+                        <td class="px-6 py-4 text-sm font-bold text-green-600 text-right">${{ payslip.net_pay|floatformat:2 }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-8 text-center text-gray-500">No payslips found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- History Tab -->
+    <div id="tab-history" class="tab-content hidden">
+        <div class="bg-white rounded-xl shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Change History</h3>
+            <div class="space-y-4">
+                {% for record in history %}
+                <div class="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
+                    <div class="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
+                        <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-sm font-medium text-gray-800">
+                            {% if record.history_type == '+' %}Created
+                            {% elif record.history_type == '~' %}Updated
+                            {% else %}Deleted{% endif %}
+                        </p>
+                        <p class="text-xs text-gray-500">{{ record.history_date|date:"M d, Y g:i A" }}</p>
+                        {% if record.history_user %}
+                        <p class="text-xs text-gray-500">By: {{ record.history_user.email }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-gray-500 text-center py-8">No history records found.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showTab(tabName) {
+    // Hide all tab contents
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.add('hidden');
+    });
+    
+    // Remove active state from all buttons
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('border-green-500', 'text-green-600');
+        btn.classList.add('border-transparent', 'text-gray-500');
+    });
+    
+    // Show selected tab
+    document.getElementById('tab-' + tabName).classList.remove('hidden');
+    
+    // Add active state to clicked button
+    document.querySelector('[data-tab="' + tabName + '"]').classList.add('border-green-500', 'text-green-600');
+    document.querySelector('[data-tab="' + tabName + '"]').classList.remove('border-transparent', 'text-gray-500');
+}
+</script>
+{% endblock %}

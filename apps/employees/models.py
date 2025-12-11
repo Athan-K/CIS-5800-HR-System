@@ -5,6 +5,7 @@ Employee-related models including profiles, attendance, payslips, and leave requ
 from django.db import models
 from django.conf import settings
 from simple_history.models import HistoricalRecords
+from datetime import timedelta
 
 
 class Department(models.Model):
@@ -42,6 +43,8 @@ class Employee(models.Model):
     employee_id = models.CharField(max_length=20, unique=True)
     first_name = models.CharField(max_length=50)
     last_name = models.CharField(max_length=50)
+    date_of_birth = models.DateField(null=True, blank=True)
+
     
     # Work info
     department = models.ForeignKey(
@@ -229,4 +232,112 @@ class LeaveRequest(models.Model):
     
     @property
     def days_requested(self):
-        return (self.end_date - self.start_date).days + 1
+        """Calculate number of business days requested."""
+        if not self.start_date or not self.end_date:
+            return 0
+        
+        days = 0
+        current = self.start_date
+        while current <= self.end_date:
+            if current.weekday() < 5:  # Exclude weekends
+                days += 1
+            current += timedelta(days=1)
+        return days
+    
+
+class AttendanceCorrection(models.Model):
+    """Employee requests for attendance corrections."""
+    
+    class Status(models.TextChoices):
+        PENDING = 'pending', 'Pending'
+        APPROVED = 'approved', 'Approved'
+        REJECTED = 'rejected', 'Rejected'
+    
+    employee = models.ForeignKey(
+        Employee,
+        on_delete=models.CASCADE,
+        related_name='attendance_corrections'
+    )
+    attendance = models.ForeignKey(
+        Attendance,
+        on_delete=models.CASCADE,
+        related_name='corrections',
+        null=True,
+        blank=True
+    )
+    date = models.DateField()
+    
+    # Current values
+    current_time_in = models.TimeField(null=True, blank=True)
+    current_time_out = models.TimeField(null=True, blank=True)
+    current_status = models.CharField(max_length=20, blank=True)
+    
+    # Requested values
+    requested_time_in = models.TimeField(null=True, blank=True)
+    requested_time_out = models.TimeField(null=True, blank=True)
+    requested_status = models.CharField(
+        max_length=20,
+        choices=Attendance.Status.choices,
+        blank=True
+    )
+    
+    reason = models.TextField()
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.PENDING
+    )
+    
+    reviewed_by = models.ForeignKey(
+        Employee,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='reviewed_corrections'
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    reviewer_notes = models.TextField(blank=True)
+    
+    submitted_at = models.DateTimeField(auto_now_add=True)
+    
+    history = HistoricalRecords()
+    
+    class Meta:
+        ordering = ['-submitted_at']
+    
+    def __str__(self):
+        return f"{self.employee} - {self.date} correction request"
+    
+
+class Notification(models.Model):
+    """In-app notifications for employees."""
+    
+    class Type(models.TextChoices):
+        LEAVE_APPROVED = 'leave_approved', 'Leave Approved'
+        LEAVE_REJECTED = 'leave_rejected', 'Leave Rejected'
+        CORRECTION_APPROVED = 'correction_approved', 'Correction Approved'
+        CORRECTION_REJECTED = 'correction_rejected', 'Correction Rejected'
+        PAYSLIP_AVAILABLE = 'payslip_available', 'Payslip Available'
+        GENERAL = 'general', 'General'
+    
+    recipient = models.ForeignKey(
+        Employee,
+        on_delete=models.CASCADE,
+        related_name='notifications'
+    )
+    notification_type = models.CharField(
+        max_length=30,
+        choices=Type.choices,
+        default=Type.GENERAL
+    )
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    is_read = models.BooleanField(default=False)
+    link = models.CharField(max_length=255, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.recipient} - {self.title}"

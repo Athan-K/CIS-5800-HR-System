@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load employee_filters %}
 
 {% block title %}My Attendance - Ethos HRMS{% endblock %}
 
@@ -8,127 +9,229 @@
 
 {% block content %}
 <div class="max-w-5xl mx-auto">
-    <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
-        <h2 class="text-xl font-semibold text-gray-800 mb-6">Attendance</h2>
-        
-        <!-- Filter Controls -->
-        <div class="flex flex-wrap gap-4 mb-6">
+    <h2 class="text-xl font-semibold text-gray-800 mb-6">My Attendance</h2>
+    
+    <!-- Messages -->
+    {% if messages %}
+    <div class="mb-6">
+        {% for message in messages %}
+        <div class="p-4 rounded-lg {% if message.tags == 'success' %}bg-green-100 text-green-800{% elif message.tags == 'error' %}bg-red-100 text-red-800{% else %}bg-blue-100 text-blue-800{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    <!-- Pending Corrections Alert -->
+    {% if pending_corrections %}
+    <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6">
+        <h3 class="font-semibold text-yellow-800 mb-2">
+            <svg class="w-5 h-5 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            Pending Correction Requests ({{ pending_corrections.count }})
+        </h3>
+        <div class="space-y-2">
+            {% for correction in pending_corrections %}
+            <div class="flex justify-between items-center text-sm bg-white p-3 rounded-lg">
+                <div>
+                    <span class="font-medium">{{ correction.date|date:"M d, Y" }}</span>
+                    {% if correction.requested_time_in or correction.requested_time_out %}
+                    <span class="text-gray-500 mx-2">→</span>
+                    <span class="text-green-600">
+                        {{ correction.requested_time_in|time:"g:i A"|default:"--" }} - {{ correction.requested_time_out|time:"g:i A"|default:"--" }}
+                    </span>
+                    {% endif %}
+                    {% if correction.requested_status %}
+                    <span class="ml-2 px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded">
+                        Status → {{ correction.requested_status|title }}
+                    </span>
+                    {% endif %}
+                </div>
+                <span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">Pending Review</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Recent Correction Results -->
+    {% if recent_corrections %}
+    <div class="bg-white rounded-xl shadow p-4 mb-6">
+        <h3 class="font-semibold text-gray-800 mb-3">Recent Correction Results</h3>
+        <div class="space-y-2">
+            {% for correction in recent_corrections %}
+            <div class="flex justify-between items-center text-sm p-3 rounded-lg
+                {% if correction.status == 'approved' %}bg-green-50{% else %}bg-red-50{% endif %}">
+                <div>
+                    <span class="font-medium">{{ correction.date|date:"M d, Y" }}</span>
+                    {% if correction.requested_time_in or correction.requested_time_out %}
+                    <span class="text-gray-500 mx-2">•</span>
+                    <span class="text-gray-600">
+                        {{ correction.requested_time_in|time:"g:i A"|default:"--" }} - {{ correction.requested_time_out|time:"g:i A"|default:"--" }}
+                    </span>
+                    {% endif %}
+                    {% if correction.requested_status %}
+                    <span class="ml-2 text-gray-600">• Status: {{ correction.requested_status|title }}</span>
+                    {% endif %}
+                    {% if correction.reviewer_notes %}
+                    <p class="text-xs text-gray-500 mt-1">Note: {{ correction.reviewer_notes }}</p>
+                    {% endif %}
+                </div>
+                <span class="px-2 py-1 rounded-full text-xs
+                    {% if correction.status == 'approved' %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                    {{ correction.status|title }}
+                </span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Date Filter -->
+    <div class="bg-white rounded-xl shadow p-4 mb-6">
+        <form method="get" class="flex flex-wrap gap-4 items-end">
             <div>
-                <label class="block text-xs text-gray-500 mb-1">Pay Period</label>
-                <form method="get" class="flex gap-2">
-                    <input type="date" 
-                           name="start_date"
-                           value="{{ request.GET.start_date }}"
-                           placeholder="MM/DD – MM/DD"
-                           class="px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-sm">
-                    <span class="self-center text-gray-500">–</span>
-                    <input type="date" 
-                           name="end_date"
-                           value="{{ request.GET.end_date }}"
-                           class="px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-sm">
-                    <button type="submit" 
-                            class="px-6 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-sm transition">
-                        Filter
-                    </button>
-                </form>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                <input type="date" name="start_date" value="{{ request.GET.start_date }}"
+                       class="px-4 py-2 border border-gray-300 rounded-lg">
             </div>
-            
-            <button type="button" 
-                    onclick="openCorrectionModal()"
-                    class="px-6 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-sm transition self-end">
-                Request Correction
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                <input type="date" name="end_date" value="{{ request.GET.end_date }}"
+                       class="px-4 py-2 border border-gray-300 rounded-lg">
+            </div>
+            <button type="submit" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg">
+                Filter
             </button>
-        </div>
-        
-        <!-- Attendance Table -->
-        <div class="bg-gray-100 rounded-lg overflow-hidden">
-            <table class="w-full">
-                <thead>
-                    <tr class="border-b border-gray-300">
-                        <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">Date</th>
-                        <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">In</th>
-                        <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">Out</th>
-                        <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">Hours</th>
-                        <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">Status</th>
-                        <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">Notes</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for record in attendance_records %}
-                    <tr class="border-b border-gray-200 hover:bg-gray-50">
-                        <td class="px-4 py-3 text-sm text-gray-600">{{ record.date|date:"M d, Y" }}</td>
-                        <td class="px-4 py-3 text-sm text-gray-600">{{ record.time_in|time:"g:i A"|default:"—" }}</td>
-                        <td class="px-4 py-3 text-sm text-gray-600">{{ record.time_out|time:"g:i A"|default:"—" }}</td>
-                        <td class="px-4 py-3 text-sm text-gray-600">{{ record.hours_worked|floatformat:1 }}</td>
-                        <td class="px-4 py-3 text-sm">
-                            <span class="px-2 py-1 rounded-full text-xs 
-                                {% if record.status == 'present' %}bg-green-100 text-green-800
-                                {% elif record.status == 'absent' %}bg-red-100 text-red-800
-                                {% elif record.status == 'late' %}bg-yellow-100 text-yellow-800
-                                {% elif record.status == 'on_leave' %}bg-blue-100 text-blue-800
-                                {% else %}bg-gray-100 text-gray-800{% endif %}">
-                                {{ record.get_status_display }}
-                            </span>
-                        </td>
-                        <td class="px-4 py-3 text-sm text-gray-500">{{ record.notes|default:"—" }}</td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="6" class="px-4 py-8 text-center text-gray-500">
-                            No attendance records found for the selected period.
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        
-        <!-- Summary (if records exist) -->
-        {% if attendance_records %}
-        <div class="mt-6 grid grid-cols-4 gap-4">
-            <div class="bg-green-50 rounded-lg p-4 text-center">
-                <p class="text-2xl font-bold text-green-600">
-                    {{ attendance_records|length }}
-                </p>
-                <p class="text-xs text-green-700">Total Days</p>
-            </div>
-            <div class="bg-blue-50 rounded-lg p-4 text-center">
-                <p class="text-2xl font-bold text-blue-600">
-                    {% widthratio attendance_records|length 1 8 %}
-                </p>
-                <p class="text-xs text-blue-700">Est. Hours</p>
-            </div>
-        </div>
-        {% endif %}
+            <a href="{% url 'employees:attendance' %}" class="px-4 py-2 text-gray-600 hover:text-gray-800">Clear</a>
+        </form>
+    </div>
+    
+    <!-- Attendance Table -->
+    <div class="bg-white rounded-xl shadow overflow-hidden mb-6">
+        <table class="w-full">
+            <thead class="bg-gray-100">
+                <tr>
+                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Date</th>
+                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Time In</th>
+                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Time Out</th>
+                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Hours</th>
+                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Status</th>
+                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for record in attendance_records %}
+                <tr class="border-b border-gray-100 hover:bg-gray-50">
+                    <td class="px-4 py-3 text-sm text-gray-800">
+                        {{ record.date|date:"M d, Y" }}
+                        {% if record.date in pending_correction_dates %}
+                        <span class="ml-2 px-2 py-0.5 bg-yellow-100 text-yellow-800 text-xs rounded">Pending</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-3 text-sm text-gray-600">{{ record.time_in|time:"g:i A"|default:"--" }}</td>
+                    <td class="px-4 py-3 text-sm text-gray-600">{{ record.time_out|time:"g:i A"|default:"--" }}</td>
+                    <td class="px-4 py-3 text-sm text-gray-600">{{ record.hours_worked|floatformat:2|default:"--" }}</td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-1 rounded-full text-xs font-medium
+                            {% if record.status == 'present' %}bg-green-100 text-green-800
+                            {% elif record.status == 'late' %}bg-yellow-100 text-yellow-800
+                            {% elif record.status == 'absent' %}bg-red-100 text-red-800
+                            {% elif record.status == 'on_leave' %}bg-blue-100 text-blue-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {{ record.get_status_display }}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3">
+                        {% if record.date not in pending_correction_dates %}
+                        <button onclick="openCorrectionModal('{{ record.date|date:'Y-m-d' }}', '{{ record.time_in|time:'H:i'|default:'' }}', '{{ record.time_out|time:'H:i'|default:'' }}', '{{ record.status }}')"
+                                class="text-blue-600 hover:text-blue-800 text-sm">
+                            Request Correction
+                        </button>
+                        {% else %}
+                        <span class="text-gray-400 text-sm">Awaiting Review</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="px-4 py-8 text-center text-gray-500">
+                        No attendance records found.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
 
-<!-- Correction Request Modal (hidden by default) -->
+<!-- Correction Request Modal -->
 <div id="correction-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-    <div class="bg-white rounded-xl p-6 max-w-md w-full mx-4">
-        <h3 class="text-lg font-semibold mb-4">Request Attendance Correction</h3>
-        <form method="post" action="#">
+    <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4 max-h-screen overflow-y-auto">
+        <h3 class="font-semibold text-gray-800 mb-4">Request Attendance Correction</h3>
+        <form method="post" action="{% url 'employees:request_correction' %}">
             {% csrf_token %}
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Date</label>
-                    <input type="date" name="correction_date" required
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Reason</label>
-                    <textarea name="correction_reason" rows="3" required
-                              class="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                              placeholder="Please explain the correction needed..."></textarea>
+            <input type="hidden" name="date" id="correction-date">
+            
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                <p id="correction-date-display" class="text-gray-800 font-medium"></p>
+            </div>
+            
+            <!-- Time Correction -->
+            <div class="mb-4 p-4 bg-gray-50 rounded-lg">
+                <p class="text-sm font-medium text-gray-700 mb-3">Time Correction (optional)</p>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs text-gray-600 mb-1">Time In</label>
+                        <input type="time" name="time_in" id="correction-time-in"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-600 mb-1">Time Out</label>
+                        <input type="time" name="time_out" id="correction-time-out"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                    </div>
                 </div>
             </div>
-            <div class="flex gap-3 mt-6">
-                <button type="button" onclick="closeCorrectionModal()"
+            
+            <!-- Status Correction -->
+            <div class="mb-4 p-4 bg-gray-50 rounded-lg">
+                <p class="text-sm font-medium text-gray-700 mb-3">Status Correction (optional)</p>
+                <div class="mb-2">
+                    <label class="block text-xs text-gray-600 mb-1">Current Status</label>
+                    <p id="current-status-display" class="text-sm font-medium text-gray-800"></p>
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-600 mb-1">Change To</label>
+                    <select name="requested_status" id="correction-status"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        <option value="">-- No Change --</option>
+                        <option value="present">Present</option>
+                        <option value="late">Late</option>
+                        <option value="absent">Absent</option>
+                        <option value="on_leave">On Leave</option>
+                        <option value="half_day">Half Day</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                    Reason for Correction <span class="text-red-500">*</span>
+                </label>
+                <textarea name="reason" rows="3" required
+                          class="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                          placeholder="Please explain why this correction is needed..."></textarea>
+            </div>
+            
+            <div class="flex gap-3">
+                <button type="button" onclick="closeCorrectionModal()" 
                         class="flex-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg">
                     Cancel
                 </button>
-                <button type="submit"
-                        class="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg">
+                <button type="submit" class="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg">
                     Submit Request
                 </button>
             </div>
@@ -137,14 +240,38 @@
 </div>
 
 <script>
-    function openCorrectionModal() {
-        document.getElementById('correction-modal').classList.remove('hidden');
-        document.getElementById('correction-modal').classList.add('flex');
-    }
+const statusLabels = {
+    'present': 'Present',
+    'late': 'Late',
+    'absent': 'Absent',
+    'on_leave': 'On Leave',
+    'half_day': 'Half Day'
+};
+
+function openCorrectionModal(date, timeIn, timeOut, currentStatus) {
+    document.getElementById('correction-date').value = date;
+    document.getElementById('correction-date-display').textContent = new Date(date + 'T00:00:00').toLocaleDateString('en-US', { 
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+    });
+    document.getElementById('correction-time-in').value = timeIn;
+    document.getElementById('correction-time-out').value = timeOut;
+    document.getElementById('current-status-display').textContent = statusLabels[currentStatus] || 'No Record';
+    document.getElementById('correction-status').value = '';
     
-    function closeCorrectionModal() {
-        document.getElementById('correction-modal').classList.add('hidden');
-        document.getElementById('correction-modal').classList.remove('flex');
+    document.getElementById('correction-modal').classList.remove('hidden');
+    document.getElementById('correction-modal').classList.add('flex');
+}
+
+function closeCorrectionModal() {
+    document.getElementById('correction-modal').classList.add('hidden');
+    document.getElementById('correction-modal').classList.remove('flex');
+}
+
+// Close modal when clicking outside
+document.getElementById('correction-modal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeCorrectionModal();
     }
+});
 </script>
 {% endblock %}

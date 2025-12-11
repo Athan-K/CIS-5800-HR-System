@@ -1,0 +1,40 @@
+{% extends "emails/base_email.html" %}
+
+{% block title %}Leave Request Approved{% endblock %}
+
+{% block content %}
+<p>Hi {{ employee.first_name }},</p>
+
+<span class="status-badge status-approved">✓ Approved</span>
+
+<p>Great news! Your leave request has been approved.</p>
+
+<div class="details-box">
+    <div class="details-row">
+        <span class="details-label">Leave Type</span>
+        <span class="details-value">{{ leave_request.get_leave_type_display }}</span>
+    </div>
+    <div class="details-row">
+        <span class="details-label">Start Date</span>
+        <span class="details-value">{{ leave_request.start_date|date:"F d, Y" }}</span>
+    </div>
+    <div class="details-row">
+        <span class="details-label">End Date</span>
+        <span class="details-value">{{ leave_request.end_date|date:"F d, Y" }}</span>
+    </div>
+    <div class="details-row">
+        <span class="details-label">Days</span>
+        <span class="details-value">{{ leave_request.days_requested }} day(s)</span>
+    </div>
+    {% if leave_request.manager_notes %}
+    <div class="details-row">
+        <span class="details-label">Notes</span>
+        <span class="details-value">{{ leave_request.manager_notes }}</span>
+    </div>
+    {% endif %}
+</div>
+
+<p>Your leave balance has been updated accordingly.</p>
+
+<a href="http://127.0.0.1:8000/employee/leave/" class="button">View in HRMS</a>
+{% endblock %}

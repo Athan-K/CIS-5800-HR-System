@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{% if object %}Edit{% else %}Add{% endif %} Employee - Ethos HRMS{% endblock %}
+{% block title %}{% if form.instance.pk %}Edit{% else %}Add{% endif %} Employee - Ethos HRMS{% endblock %}
 
 {% block navigation %}
 {% include "components/navbar_hr.html" %}
@@ -8,60 +8,91 @@
 
 {% block content %}
 <div class="max-w-4xl mx-auto">
-    <div class="bg-white rounded-lg shadow-lg p-8">
-        <h2 class="text-xl font-semibold text-gray-800 mb-6">
-            {% if object %}Edit Employee{% else %}Add New Employee{% endif %}
+    <!-- Back Button -->
+    <div class="mb-4">
+        <a href="{% url 'hr:employee_list' %}" class="text-gray-600 hover:text-gray-800 text-sm flex items-center gap-1">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+            Back to Employees
+        </a>
+    </div>
+    
+    <div class="bg-white rounded-xl shadow-lg p-8">
+        <h2 class="text-2xl font-bold text-gray-800 mb-6">
+            {% if form.instance.pk %}Edit Employee{% else %}Add New Employee{% endif %}
         </h2>
         
-        <form method="post" novalidate>
+        {% if form.errors %}
+        <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p class="text-red-800 font-medium">Please correct the errors below:</p>
+            {% for field in form %}
+                {% for error in field.errors %}
+                <p class="text-sm text-red-600">{{ field.label }}: {{ error }}</p>
+                {% endfor %}
+            {% endfor %}
+            {% for error in form.non_field_errors %}
+            <p class="text-sm text-red-600">{{ error }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        <form method="post">
             {% csrf_token %}
             
-            <!-- Basic Information -->
+            <!-- Account Information -->
             <div class="mb-8">
-                <h3 class="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-4 pb-2 border-b">
-                    Basic Information
-                </h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <h3 class="text-lg font-semibold text-gray-700 mb-4 pb-2 border-b">Account Information</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Name</label>
-                        <div class="grid grid-cols-2 gap-2">
-                            {{ form.first_name }}
-                            {{ form.last_name }}
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Employee ID</label>
-                        {{ form.employee_id }}
-                        {% if form.employee_id.errors %}
-                        <p class="text-red-500 text-xs mt-1">{{ form.employee_id.errors.0 }}</p>
-                        {% endif %}
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Email <span class="text-red-500">*</span></label>
                         {{ form.email }}
-                        {% if form.email.errors %}
-                        <p class="text-red-500 text-xs mt-1">{{ form.email.errors.0 }}</p>
-                        {% endif %}
+                        {% if form.instance.pk %}<p class="text-xs text-gray-500 mt-1">Email cannot be changed</p>{% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Role <span class="text-red-500">*</span></label>
+                        {{ form.role }}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Personal Information -->
+            <div class="mb-8">
+                <h3 class="text-lg font-semibold text-gray-700 mb-4 pb-2 border-b">Personal Information</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">First Name <span class="text-red-500">*</span></label>
+                        {{ form.first_name }}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Last Name <span class="text-red-500">*</span></label>
+                        {{ form.last_name }}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
+                        {{ form.date_of_birth }}
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Phone</label>
                         {{ form.phone }}
                     </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                        {{ form.address }}
+                    </div>
                 </div>
             </div>
             
-            <!-- Work Information -->
+            <!-- Employment Details -->
             <div class="mb-8">
-                <h3 class="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-4 pb-2 border-b">
-                    Work Information
-                </h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <h3 class="text-lg font-semibold text-gray-700 mb-4 pb-2 border-b">Employment Details</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Department</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Department <span class="text-red-500">*</span></label>
                         {{ form.department }}
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Role/Job Title</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Job Title <span class="text-red-500">*</span></label>
                         {{ form.job_title }}
                     </div>
                     <div>
@@ -69,36 +100,30 @@
                         {{ form.manager }}
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-                        {{ form.start_date }}
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Status <span class="text-red-500">*</span></label>
                         {{ form.status }}
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Salary</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Start Date <span class="text-red-500">*</span></label>
+                        {{ form.start_date }}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Annual Salary <span class="text-red-500">*</span></label>
                         {{ form.salary }}
                     </div>
                 </div>
             </div>
             
-            <!-- Contact Information -->
+            <!-- Emergency Contact -->
             <div class="mb-8">
-                <h3 class="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-4 pb-2 border-b">
-                    Contact Information
-                </h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="md:col-span-2">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Address</label>
-                        {{ form.address }}
-                    </div>
+                <h3 class="text-lg font-semibold text-gray-700 mb-4 pb-2 border-b">Emergency Contact</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Emergency Contact</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Contact Name</label>
                         {{ form.emergency_contact }}
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Emergency Phone</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Contact Phone</label>
                         {{ form.emergency_phone }}
                     </div>
                 </div>
@@ -106,20 +131,18 @@
             
             <!-- Leave Balances -->
             <div class="mb-8">
-                <h3 class="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-4 pb-2 border-b">
-                    Leave Balances
-                </h3>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <h3 class="text-lg font-semibold text-gray-700 mb-4 pb-2 border-b">Leave Balances</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Annual Leave</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Annual Leave (days)</label>
                         {{ form.annual_leave_balance }}
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Sick Leave</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Sick Leave (days)</label>
                         {{ form.sick_leave_balance }}
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Vacation</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Vacation (days)</label>
                         {{ form.vacation_balance }}
                     </div>
                 </div>
@@ -127,22 +150,20 @@
             
             <!-- Notes -->
             <div class="mb-8">
-                <h3 class="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-4 pb-2 border-b">
-                    Notes
-                </h3>
+                <h3 class="text-lg font-semibold text-gray-700 mb-4 pb-2 border-b">Additional Notes</h3>
                 {{ form.notes }}
             </div>
             
-            <!-- Form Actions -->
-            <div class="flex gap-3 pt-6 border-t">
-                <button type="submit" 
-                        class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition">
-                    {% if object %}Save Changes{% else %}Create Employee{% endif %}
-                </button>
+            <!-- Submit Buttons -->
+            <div class="flex gap-3 pt-4 border-t">
                 <a href="{% url 'hr:employee_list' %}" 
-                   class="px-6 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition">
+                   class="flex-1 px-4 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-center font-medium">
                     Cancel
                 </a>
+                <button type="submit" 
+                        class="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium">
+                    {% if form.instance.pk %}Update Employee{% else %}Create Employee{% endif %}
+                </button>
             </div>
         </form>
     </div>

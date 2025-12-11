@@ -1,210 +1,356 @@
 {% extends "base.html" %}
 
-{% block title %}Reports - Ethos HRMS{% endblock %}
+{% block title %}Reports & Analytics - Ethos HRMS{% endblock %}
 
 {% block navigation %}
 {% include "components/navbar_hr.html" %}
 {% endblock %}
 
 {% block content %}
-<div class="max-w-6xl mx-auto">
-    <h2 class="text-sm font-medium text-gray-600 mb-4">Reports</h2>
+<div class="max-w-7xl mx-auto">
+    <div class="flex justify-between items-center mb-6">
+    <h2 class="text-2xl font-bold text-gray-800">Reports & Analytics</h2>
+    <div class="flex gap-2">
+        <a href="{% url 'hr:generate_report_page' %}" 
+           class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm">
+            Generate Custom Report
+        </a>
+        <button onclick="window.print()" 
+                class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-sm">
+            Print Report
+        </button>
+        <button onclick="exportData()" 
+                class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm">
+            Export CSV
+        </button>
+    </div>
+</div>
     
-    <div class="flex gap-4">
-        <!-- Report Configuration Panel -->
-        <div class="w-64 bg-gray-100 rounded-lg p-4 border border-gray-200">
-            <form id="report-form" 
-                  hx-get="{% url 'hr:generate_report' %}"
-                  hx-target="#report-preview"
-                  hx-trigger="submit">
-                
-                <!-- Report Type -->
-                <div class="mb-4">
-                    <label class="block text-xs font-medium text-gray-600 mb-2">Report Type</label>
-                    <select name="report_type" 
-                            class="w-full px-3 py-2 bg-white border border-gray-300 rounded text-sm">
-                        <option value="">Select type...</option>
-                        {% for value, label in report_types %}
-                        <option value="{{ value }}">{{ label }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                
-                <!-- Date Range -->
-                <div class="mb-4">
-                    <label class="block text-xs font-medium text-gray-600 mb-2">Date Range</label>
-                    <input type="date" 
-                           name="start_date"
-                           class="w-full px-3 py-2 bg-white border border-gray-300 rounded text-sm mb-2">
-                    <input type="date" 
-                           name="end_date"
-                           class="w-full px-3 py-2 bg-white border border-gray-300 rounded text-sm">
-                </div>
-                
-                <!-- Department -->
-                <div class="mb-4">
-                    <label class="block text-xs font-medium text-gray-600 mb-2">Department</label>
-                    <select name="department" 
-                            class="w-full px-3 py-2 bg-white border border-gray-300 rounded text-sm">
-                        <option value="">All Departments</option>
-                        {% for dept in departments %}
-                        <option value="{{ dept.id }}">{{ dept.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                
-                <!-- Include Fields -->
-                <div class="mb-4">
-                    <label class="block text-xs font-medium text-gray-600 mb-2">Include Fields</label>
-                    <div class="bg-white border border-gray-300 rounded p-2 h-32 overflow-y-auto text-xs">
-                        <label class="flex items-center gap-2 py-1">
-                            <input type="checkbox" name="fields" value="name" checked>
-                            <span>Employee Name</span>
-                        </label>
-                        <label class="flex items-center gap-2 py-1">
-                            <input type="checkbox" name="fields" value="department" checked>
-                            <span>Department</span>
-                        </label>
-                        <label class="flex items-center gap-2 py-1">
-                            <input type="checkbox" name="fields" value="role" checked>
-                            <span>Role/Title</span>
-                        </label>
-                        <label class="flex items-center gap-2 py-1">
-                            <input type="checkbox" name="fields" value="start_date">
-                            <span>Start Date</span>
-                        </label>
-                        <label class="flex items-center gap-2 py-1">
-                            <input type="checkbox" name="fields" value="salary">
-                            <span>Salary</span>
-                        </label>
-                        <label class="flex items-center gap-2 py-1">
-                            <input type="checkbox" name="fields" value="leave_balance">
-                            <span>Leave Balance</span>
-                        </label>
-                    </div>
-                </div>
-                
-                <!-- Action Buttons -->
-                <div class="flex gap-2">
-                    <button type="submit" 
-                            class="flex-1 px-3 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded text-sm border border-gray-300">
-                        Generate
-                    </button>
-                    <button type="reset" 
-                            class="flex-1 px-3 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded text-sm border border-gray-300">
-                        Reset
-                    </button>
-                </div>
-            </form>
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div class="bg-white rounded-xl shadow p-6 border-l-4 border-green-500">
+            <p class="text-sm text-gray-500">Total Employees</p>
+            <p class="text-3xl font-bold text-gray-800">{{ total_employees }}</p>
+            <p class="text-xs text-green-600 mt-1">Active workforce</p>
+        </div>
+        <div class="bg-white rounded-xl shadow p-6 border-l-4 border-blue-500">
+            <p class="text-sm text-gray-500">On Leave</p>
+            <p class="text-3xl font-bold text-gray-800">{{ on_leave }}</p>
+            <p class="text-xs text-blue-600 mt-1">Currently away</p>
+        </div>
+        <div class="bg-white rounded-xl shadow p-6 border-l-4 border-yellow-500">
+            <p class="text-sm text-gray-500">Pending Requests</p>
+            <p class="text-3xl font-bold text-gray-800">{{ pending_leaves }}</p>
+            <p class="text-xs text-yellow-600 mt-1">Awaiting approval</p>
+        </div>
+        <div class="bg-white rounded-xl shadow p-6 border-l-4 border-purple-500">
+            <p class="text-sm text-gray-500">Departments</p>
+            <p class="text-3xl font-bold text-gray-800">{{ departments|length }}</p>
+            <p class="text-xs text-purple-600 mt-1">Active departments</p>
+        </div>
+    </div>
+    
+    <!-- Charts Row 1 -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <!-- Headcount Trend -->
+        <div class="bg-white rounded-xl shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Headcount Trend</h3>
+            <canvas id="headcountChart" height="200"></canvas>
         </div>
         
-        <!-- Report Preview Panel -->
-        <div class="flex-1 bg-gray-100 rounded-lg border border-gray-200">
-            <!-- Preview Header -->
-            <div class="flex justify-between items-center px-4 py-3 border-b border-gray-200">
-                <span class="text-xs font-medium text-gray-600">Generated Report Preview</span>
-                <div class="flex gap-2">
-                    <button onclick="printReport()" 
-                            class="px-3 py-1 bg-gray-200 hover:bg-gray-300 text-gray-600 rounded text-xs border border-gray-300">
-                        Print
-                    </button>
-                    <button onclick="saveReport()" 
-                            class="px-3 py-1 bg-gray-200 hover:bg-gray-300 text-gray-600 rounded text-xs border border-gray-300">
-                        Save As
-                    </button>
+        <!-- Department Distribution -->
+        <div class="bg-white rounded-xl shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Employees by Department</h3>
+            <canvas id="departmentChart" height="200"></canvas>
+        </div>
+    </div>
+    
+    <!-- Charts Row 2 -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <!-- Leave Requests by Type -->
+        <div class="bg-white rounded-xl shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Leave by Type</h3>
+            <canvas id="leaveTypeChart" height="200"></canvas>
+        </div>
+        
+        <!-- Leave Status -->
+        <div class="bg-white rounded-xl shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Leave Request Status</h3>
+            <canvas id="leaveStatusChart" height="200"></canvas>
+        </div>
+        
+        <!-- Tenure Distribution -->
+        <div class="bg-white rounded-xl shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Employee Tenure</h3>
+            <canvas id="tenureChart" height="200"></canvas>
+        </div>
+    </div>
+    
+    <!-- Charts Row 3 -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <!-- Average Salary by Department -->
+        <div class="bg-white rounded-xl shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Average Salary by Department</h3>
+            <canvas id="salaryChart" height="200"></canvas>
+        </div>
+        
+        <!-- Recent Hires -->
+        <div class="bg-white rounded-xl shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Recent Hires (Last 30 Days)</h3>
+            {% if recent_hires %}
+            <div class="space-y-3">
+                {% for emp in recent_hires %}
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                        <p class="font-medium text-gray-800">{{ emp.full_name }}</p>
+                        <p class="text-sm text-gray-500">{{ emp.job_title }} • {{ emp.department.name }}</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-sm text-gray-600">{{ emp.start_date|date:"M d, Y" }}</p>
+                    </div>
                 </div>
+                {% endfor %}
             </div>
-            
-            <!-- Preview Content -->
-            <div id="report-preview" class="p-4 min-h-[500px]">
-                <!-- Chart Container -->
-                <div class="mb-6">
-                    <canvas id="report-chart" class="max-h-64"></canvas>
-                </div>
-                
-                <!-- Data Table -->
-                <div class="bg-white rounded border border-gray-200 overflow-hidden">
-                    <table class="w-full text-xs">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-3 py-2 text-left text-gray-600 border-b">—</th>
-                                <th class="px-3 py-2 text-left text-gray-600 border-b">—</th>
-                                <th class="px-3 py-2 text-left text-gray-600 border-b">—</th>
-                                <th class="px-3 py-2 text-left text-gray-600 border-b">—</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for i in "12345678910" %}
-                            <tr class="border-b border-gray-100">
-                                <td class="px-3 py-2 text-gray-400">—</td>
-                                <td class="px-3 py-2 text-gray-400">—</td>
-                                <td class="px-3 py-2 text-gray-400">—</td>
-                                <td class="px-3 py-2 text-gray-400">—</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                
-                <p class="text-center text-gray-400 text-sm mt-8">
-                    Select report options and click "Generate" to preview
-                </p>
+            {% else %}
+            <p class="text-gray-500 text-center py-8">No new hires in the last 30 days</p>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Department Details Table -->
+    <div class="bg-white rounded-xl shadow p-6 mb-6">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Department Summary</h3>
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Department</th>
+                        <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Employees</th>
+                        <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">% of Total</th>
+                        <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Visualization</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for dept in departments %}
+                    <tr class="border-b border-gray-100">
+                        <td class="px-4 py-3 text-sm font-medium text-gray-800">{{ dept.name }}</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">{{ dept.employee_count }}</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">
+                            {% widthratio dept.employee_count total_employees 100 %}%
+                        </td>
+                        <td class="px-4 py-3">
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-green-500 h-2 rounded-full" 
+                                     style="width: {% widthratio dept.employee_count total_employees 100 %}%"></div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Attendance Summary -->
+    <div class="bg-white rounded-xl shadow p-6">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Attendance Summary (Last 7 Days)</h3>
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div class="text-center p-4 bg-green-50 rounded-lg">
+                <p class="text-2xl font-bold text-green-600">{{ attendance_stats.present|default:0 }}</p>
+                <p class="text-sm text-gray-600">Present</p>
+            </div>
+            <div class="text-center p-4 bg-yellow-50 rounded-lg">
+                <p class="text-2xl font-bold text-yellow-600">{{ attendance_stats.late|default:0 }}</p>
+                <p class="text-sm text-gray-600">Late</p>
+            </div>
+            <div class="text-center p-4 bg-red-50 rounded-lg">
+                <p class="text-2xl font-bold text-red-600">{{ attendance_stats.absent|default:0 }}</p>
+                <p class="text-sm text-gray-600">Absent</p>
+            </div>
+            <div class="text-center p-4 bg-blue-50 rounded-lg">
+                <p class="text-2xl font-bold text-blue-600">{{ attendance_stats.on_leave|default:0 }}</p>
+                <p class="text-sm text-gray-600">On Leave</p>
+            </div>
+            <div class="text-center p-4 bg-purple-50 rounded-lg">
+                <p class="text-2xl font-bold text-purple-600">{{ attendance_stats.half_day|default:0 }}</p>
+                <p class="text-sm text-gray-600">Half Day</p>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-    let reportChart = null;
+    // Color palette
+    const colors = {
+        primary: 'rgb(34, 197, 94)',
+        primaryLight: 'rgba(34, 197, 94, 0.2)',
+        blue: 'rgb(59, 130, 246)',
+        blueLight: 'rgba(59, 130, 246, 0.2)',
+        purple: 'rgb(139, 92, 246)',
+        yellow: 'rgb(234, 179, 8)',
+        red: 'rgb(239, 68, 68)',
+        gray: 'rgb(107, 114, 128)',
+        palette: [
+            'rgb(34, 197, 94)',
+            'rgb(59, 130, 246)',
+            'rgb(139, 92, 246)',
+            'rgb(234, 179, 8)',
+            'rgb(239, 68, 68)',
+            'rgb(236, 72, 153)',
+            'rgb(20, 184, 166)',
+            'rgb(249, 115, 22)',
+        ]
+    };
     
-    // Listen for HTMX response to update chart
-    document.body.addEventListener('htmx:afterSwap', function(event) {
-        if (event.detail.target.id === 'report-preview') {
-            updateChart(event.detail.xhr.response);
+    // Headcount Trend Chart
+    new Chart(document.getElementById('headcountChart'), {
+        type: 'line',
+        data: {
+            labels: {{ month_labels|safe }},
+            datasets: [{
+                label: 'Headcount',
+                data: {{ monthly_headcount|safe }},
+                borderColor: colors.primary,
+                backgroundColor: colors.primaryLight,
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: { beginAtZero: true }
+            }
         }
     });
     
-    function updateChart(data) {
-        try {
-            const parsed = JSON.parse(data);
-            const ctx = document.getElementById('report-chart');
-            
-            if (reportChart) {
-                reportChart.destroy();
+    // Department Distribution Chart
+    new Chart(document.getElementById('departmentChart'), {
+        type: 'bar',
+        data: {
+            labels: {{ department_names|safe }},
+            datasets: [{
+                label: 'Employees',
+                data: {{ department_counts|safe }},
+                backgroundColor: colors.palette,
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: { beginAtZero: true }
             }
-            
-            if (parsed.by_department) {
-                reportChart = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: parsed.by_department.map(d => d.department__name || 'Unknown'),
-                        datasets: [{
-                            label: 'Employees',
-                            data: parsed.by_department.map(d => d.count),
-                            backgroundColor: 'rgba(34, 197, 94, 0.5)',
-                            borderColor: 'rgb(34, 197, 94)',
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        plugins: {
-                            legend: { display: false }
+        }
+    });
+    
+    // Leave by Type Chart
+    new Chart(document.getElementById('leaveTypeChart'), {
+        type: 'doughnut',
+        data: {
+            labels: {{ leave_types|safe }},
+            datasets: [{
+                data: {{ leave_type_counts|safe }},
+                backgroundColor: colors.palette
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
+    });
+    
+    // Leave Status Chart
+    new Chart(document.getElementById('leaveStatusChart'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Pending', 'Approved', 'Rejected'],
+            datasets: [{
+                data: [{{ pending_leaves }}, {{ approved_leaves }}, {{ rejected_leaves }}],
+                backgroundColor: [colors.yellow, colors.primary, colors.red]
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
+    });
+    
+    // Tenure Distribution Chart
+    new Chart(document.getElementById('tenureChart'), {
+        type: 'bar',
+        data: {
+            labels: {{ tenure_labels|safe }},
+            datasets: [{
+                label: 'Employees',
+                data: {{ tenure_counts|safe }},
+                backgroundColor: colors.blue,
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            indexAxis: 'y',
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
+    
+    // Average Salary Chart
+    new Chart(document.getElementById('salaryChart'), {
+        type: 'bar',
+        data: {
+            labels: {{ salary_dept_names|safe }},
+            datasets: [{
+                label: 'Average Salary ($)',
+                data: {{ salary_averages|safe }},
+                backgroundColor: colors.purple,
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '$' + value.toLocaleString();
                         }
                     }
-                });
+                }
             }
-        } catch (e) {
-            // Not JSON, probably HTML preview
         }
-    }
+    });
     
-    function printReport() {
-        window.print();
-    }
-    
-    function saveReport() {
-        alert('Export functionality would save as CSV/PDF');
+    // Export function
+    function exportData() {
+        // Simple CSV export of department data
+        let csv = 'Department,Employees,Percentage\n';
+        {% for dept in departments %}
+        csv += '{{ dept.name }},{{ dept.employee_count }},{% widthratio dept.employee_count total_employees 100 %}%\n';
+        {% endfor %}
+        
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'ethos_report_' + new Date().toISOString().split('T')[0] + '.csv';
+        a.click();
     }
 </script>
 {% endblock %}

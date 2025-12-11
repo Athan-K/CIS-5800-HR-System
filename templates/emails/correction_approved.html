@@ -1,0 +1,38 @@
+{% extends "emails/base_email.html" %}
+
+{% block title %}Attendance Correction Approved{% endblock %}
+
+{% block content %}
+<p>Hi {{ employee.first_name }},</p>
+
+<span class="status-badge status-approved">✓ Approved</span>
+
+<p>Your attendance correction request has been approved and your records have been updated.</p>
+
+<div class="details-box">
+    <div class="details-row">
+        <span class="details-label">Date</span>
+        <span class="details-value">{{ correction.date|date:"F d, Y" }}</span>
+    </div>
+    {% if correction.requested_time_in or correction.requested_time_out %}
+    <div class="details-row">
+        <span class="details-label">Updated Time</span>
+        <span class="details-value">{{ correction.requested_time_in|time:"g:i A"|default:"--" }} - {{ correction.requested_time_out|time:"g:i A"|default:"--" }}</span>
+    </div>
+    {% endif %}
+    {% if correction.requested_status %}
+    <div class="details-row">
+        <span class="details-label">Updated Status</span>
+        <span class="details-value">{{ correction.requested_status|title }}</span>
+    </div>
+    {% endif %}
+    {% if correction.reviewer_notes %}
+    <div class="details-row">
+        <span class="details-label">Notes</span>
+        <span class="details-value">{{ correction.reviewer_notes }}</span>
+    </div>
+    {% endif %}
+</div>
+
+<a href="http://127.0.0.1:8000/employee/attendance/" class="button">View Attendance</a>
+{% endblock %}

@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - Ethos HRMS{% endblock %}
+
+{% block navigation %}
+{% include "components/navbar_hr.html" %}
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <h2 class="text-2xl font-bold text-gray-800 mb-6">Settings</h2>
+    
+    <!-- Messages -->
+    {% if messages %}
+    <div class="mb-6">
+        {% for message in messages %}
+        <div class="p-4 rounded-lg {% if message.tags == 'success' %}bg-green-100 text-green-800{% elif message.tags == 'error' %}bg-red-100 text-red-800{% else %}bg-blue-100 text-blue-800{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Account Settings -->
+        <div class="bg-white rounded-xl shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Account Settings</h3>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-600">Email</label>
+                    <p class="text-gray-800">{{ user.email }}</p>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-600">Role</label>
+                    <p class="text-gray-800 capitalize">{{ user.role }}</p>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-600">Last Login</label>
+                    <p class="text-gray-800">{{ user.last_login|date:"M d, Y H:i" }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Security Settings -->
+        <div class="bg-white rounded-xl shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Security</h3>
+            
+            <div class="space-y-4">
+                <!-- Change Password -->
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div>
+                        <p class="font-medium text-gray-800">Change Password</p>
+                        <p class="text-sm text-gray-500">Update your account password</p>
+                    </div>
+                    <a href="{% url 'account_change_password' %}" 
+                       class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-sm">
+                        Change
+                    </a>
+                </div>
+                
+                <!-- Two-Factor Authentication -->
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div>
+                        <p class="font-medium text-gray-800">Two-Factor Authentication</p>
+                        <p class="text-sm text-gray-500">
+                            {% if user.two_factor_enabled %}
+                            <span class="text-green-600">Enabled</span>
+                            {% else %}
+                            <span class="text-yellow-600">Not enabled</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    <a href="{% url 'setup_2fa' %}" 
+                       class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-sm">
+                        {% if user.two_factor_enabled %}Manage{% else %}Enable{% endif %}
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- System Settings (HR Only) -->
+        <div class="bg-white rounded-xl shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">System Settings</h3>
+            
+            <div class="space-y-4">
+                <!-- Manage Departments -->
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div>
+                        <p class="font-medium text-gray-800">Departments</p>
+                        <p class="text-sm text-gray-500">Add, edit, or remove departments</p>
+                    </div>
+                    <a href="{% url 'hr:department_list' %}" 
+                       class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-sm">
+                        Manage
+                    </a>
+                </div>
+                
+                <!-- View Audit Log -->
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div>
+                        <p class="font-medium text-gray-800">Audit Log</p>
+                        <p class="text-sm text-gray-500">View system activity history</p>
+                    </div>
+                    <a href="{% url 'admin:index' %}" 
+                       class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-sm">
+                        View
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Data Management -->
+        <div class="bg-white rounded-xl shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Data Management</h3>
+            
+            <div class="space-y-4">
+                <!-- Export Data -->
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div>
+                        <p class="font-medium text-gray-800">Export Employee Data</p>
+                        <p class="text-sm text-gray-500">Download all employee records as CSV</p>
+                    </div>
+                    <button onclick="exportEmployeeData()" 
+                            class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm">
+                        Export
+                    </button>
+                </div>
+                
+                <!-- Backup -->
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div>
+                        <p class="font-medium text-gray-800">Backup Database</p>
+                        <p class="text-sm text-gray-500">Create a backup of system data</p>
+                    </div>
+                    <button onclick="alert('Backup functionality coming soon!')" 
+                            class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-sm">
+                        Backup
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Danger Zone -->
+    <div class="mt-6 bg-white rounded-xl shadow p-6 border-l-4 border-red-500">
+        <h3 class="text-lg font-semibold text-red-600 mb-4">Danger Zone</h3>
+        <div class="flex items-center justify-between p-4 bg-red-50 rounded-lg">
+            <div>
+                <p class="font-medium text-gray-800">Delete All Test Data</p>
+                <p class="text-sm text-gray-500">Remove all sample/test data from the system</p>
+            </div>
+            <button onclick="confirmDeleteTestData()" 
+                    class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm">
+                Delete
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+function exportEmployeeData() {
+    window.location.href = '{% url "hr:employee_list" %}?export=csv';
+    // Note: You'll need to implement the actual CSV export in the view
+    alert('Export functionality - implement CSV export in EmployeeListView');
+}
+
+function confirmDeleteTestData() {
+    if (confirm('Are you sure you want to delete all test data? This cannot be undone!')) {
+        alert('Delete test data functionality - implement in backend');
+    }
+}
+</script>
+{% endblock %}

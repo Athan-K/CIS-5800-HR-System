@@ -7,162 +7,257 @@
 {% endblock %}
 
 {% block content %}
-<div class="max-w-5xl mx-auto space-y-6">
-    <!-- Leave Request Form -->
-    <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-gray-300">
-        <h2 class="text-xl font-semibold text-gray-800 mb-6">Leave Request</h2>
-        
-        <form method="post">
-            {% csrf_token %}
-            
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                <!-- Leave Type -->
-                <div>
-                    <label class="block text-sm text-gray-600 mb-1">Leave Type</label>
-                    <select name="leave_type" 
-                            id="leave-type"
-                            hx-get="{% url 'employees:check_balance' %}"
-                            hx-target="#balance-display"
-                            hx-trigger="change"
-                            class="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-sm">
-                        <option value="">Vacation / Sick / Other</option>
-                        <option value="annual">Annual Leave</option>
-                        <option value="vacation">Vacation</option>
-                        <option value="sick">Sick Leave</option>
-                        <option value="unpaid">Unpaid Leave</option>
-                        <option value="other">Other</option>
-                    </select>
+<div class="max-w-4xl mx-auto">
+    <h2 class="text-xl font-semibold text-gray-800 mb-6">Leave Request</h2>
+    
+    <!-- Messages -->
+    {% if messages %}
+    <div class="mb-6">
+        {% for message in messages %}
+        <div class="p-4 rounded-lg {% if message.tags == 'success' %}bg-green-100 text-green-800{% elif message.tags == 'error' %}bg-red-100 text-red-800{% else %}bg-blue-100 text-blue-800{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Leave Balances Card -->
+        <div class="lg:col-span-1">
+            <div class="bg-white rounded-xl shadow p-6 sticky top-6">
+                <h3 class="font-semibold text-gray-800 mb-4">Your Leave Balances</h3>
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+                        <span class="text-sm text-gray-700">Annual Leave</span>
+                        <span class="font-bold text-green-600">{{ leave_balances.annual }} days</span>
+                    </div>
+                    <div class="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
+                        <span class="text-sm text-gray-700">Vacation</span>
+                        <span class="font-bold text-blue-600">{{ leave_balances.vacation }} days</span>
+                    </div>
+                    <div class="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
+                        <span class="text-sm text-gray-700">Sick Leave</span>
+                        <span class="font-bold text-purple-600">{{ leave_balances.sick }} days</span>
+                    </div>
                 </div>
                 
-                <!-- Start Date -->
-                <div>
-                    <label class="block text-sm text-gray-600 mb-1">Start Date</label>
-                    <input type="date" 
-                           name="start_date"
-                           required
-                           class="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-sm">
+                {% if pending_requests %}
+                <div class="mt-6 pt-4 border-t">
+                    <h4 class="font-medium text-gray-700 mb-3">Pending Requests</h4>
+                    <div class="space-y-2">
+                        {% for req in pending_requests %}
+                        <div class="p-3 bg-yellow-50 rounded-lg text-sm">
+                            <p class="font-medium text-gray-800">{{ req.get_leave_type_display }}</p>
+                            <p class="text-gray-600">{{ req.start_date|date:"M d" }} - {{ req.end_date|date:"M d" }}</p>
+                            <p class="text-xs text-yellow-600 mt-1">{{ req.days_requested }} day(s) • Pending</p>
+                        </div>
+                        {% endfor %}
+                    </div>
                 </div>
-                
-                <!-- End Date -->
-                <div>
-                    <label class="block text-sm text-gray-600 mb-1">End Date</label>
-                    <input type="date" 
-                           name="end_date"
-                           required
-                           class="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-sm">
-                </div>
-            </div>
-            
-            <!-- Reason -->
-            <div class="mb-4">
-                <label class="block text-sm text-gray-600 mb-1">Reason</label>
-                <textarea name="reason"
-                          rows="4"
-                          required
-                          placeholder="Short note..."
-                          class="w-full px-4 py-3 bg-gray-100 border border-gray-300 rounded-lg text-sm resize-none"></textarea>
-            </div>
-            
-            <!-- Action Buttons -->
-            <div class="flex gap-3">
-                <button type="button" 
-                        onclick="checkBalance()"
-                        class="px-6 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-sm transition">
-                    Check Balance
-                </button>
-                <button type="submit" 
-                        class="px-6 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-sm transition">
-                    Submit
-                </button>
-                <button type="reset" 
-                        class="px-6 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-sm transition">
-                    Cancel
-                </button>
-            </div>
-        </form>
-        
-        <!-- Balance Display -->
-        <div id="balance-display" class="mt-4">
-            <div class="grid grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg">
-                <div class="text-center">
-                    <p class="text-2xl font-bold text-green-600">{{ leave_balances.annual }}</p>
-                    <p class="text-xs text-gray-500">Annual Days</p>
-                </div>
-                <div class="text-center">
-                    <p class="text-2xl font-bold text-blue-600">{{ leave_balances.vacation }}</p>
-                    <p class="text-xs text-gray-500">Vacation Days</p>
-                </div>
-                <div class="text-center">
-                    <p class="text-2xl font-bold text-orange-600">{{ leave_balances.sick }}</p>
-                    <p class="text-xs text-gray-500">Sick Days</p>
-                </div>
+                {% endif %}
             </div>
         </div>
-    </div>
-    
-    <!-- Recent Requests Table -->
-    <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-gray-300">
-        <h2 class="text-xl font-semibold text-gray-800 mb-6">Recent Requests</h2>
         
-        <div class="overflow-x-auto">
-            <table class="w-full">
-                <thead>
-                    <tr class="border-b border-gray-200">
-                        <th class="px-4 py-3 text-left text-sm font-medium text-gray-600">Submitted</th>
-                        <th class="px-4 py-3 text-left text-sm font-medium text-gray-600">Type</th>
-                        <th class="px-4 py-3 text-left text-sm font-medium text-gray-600">Dates</th>
-                        <th class="px-4 py-3 text-left text-sm font-medium text-gray-600">Status</th>
-                        <th class="px-4 py-3 text-left text-sm font-medium text-gray-600">Manager Note</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for request in recent_requests %}
-                    <tr class="border-b border-gray-100 hover:bg-gray-50">
-                        <td class="px-4 py-3 text-sm text-gray-600">
-                            {{ request.submitted_at|date:"M d, Y" }}
-                        </td>
-                        <td class="px-4 py-3 text-sm text-gray-600">
-                            {{ request.get_leave_type_display }}
-                        </td>
-                        <td class="px-4 py-3 text-sm text-gray-600">
-                            {{ request.start_date|date:"M d" }} - {{ request.end_date|date:"M d, Y" }}
-                            <span class="text-xs text-gray-400">({{ request.days_requested }} days)</span>
-                        </td>
-                        <td class="px-4 py-3 text-sm">
-                            <span class="px-2 py-1 rounded-full text-xs 
-                                {% if request.status == 'pending' %}bg-yellow-100 text-yellow-800
-                                {% elif request.status == 'approved' %}bg-green-100 text-green-800
-                                {% elif request.status == 'rejected' %}bg-red-100 text-red-800
-                                {% else %}bg-gray-100 text-gray-800{% endif %}">
-                                {{ request.get_status_display }}
-                            </span>
-                        </td>
-                        <td class="px-4 py-3 text-sm text-gray-500">
-                            {{ request.manager_notes|default:"—" }}
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="5" class="px-4 py-8 text-center text-gray-500">
-                            No leave requests submitted yet.
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+        <!-- Leave Request Form -->
+        <div class="lg:col-span-2">
+            <div class="bg-white rounded-xl shadow p-6">
+                <h3 class="font-semibold text-gray-800 mb-4">Submit New Request</h3>
+                
+                <form method="post" id="leave-form">
+                    {% csrf_token %}
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Leave Type</label>
+                            <select name="leave_type" id="leave-type" required
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                                <option value="">Select Type</option>
+                                <option value="annual">Annual Leave</option>
+                                <option value="vacation">Vacation</option>
+                                <option value="sick">Sick Leave</option>
+                                <option value="unpaid">Unpaid Leave</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                            <input type="date" name="start_date" id="start-date" required
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                            <input type="date" name="end_date" id="end-date" required
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                        </div>
+                    </div>
+                    
+                    <!-- Days Calculation Display -->
+                    <div id="days-calculation" class="hidden mb-4 p-4 bg-gray-50 rounded-lg">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600">Days Requested:</span>
+                            <span id="days-count" class="font-bold text-gray-800">0 days</span>
+                        </div>
+                        <div class="flex justify-between items-center mt-2">
+                            <span class="text-sm text-gray-600">Available Balance:</span>
+                            <span id="available-balance" class="font-bold text-green-600">-- days</span>
+                        </div>
+                        <div id="balance-warning" class="hidden mt-2 p-2 bg-red-100 text-red-700 text-sm rounded">
+                            ⚠️ Insufficient leave balance
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Reason (optional)</label>
+                        <textarea name="reason" rows="3"
+                                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                                  placeholder="Provide additional details if needed..."></textarea>
+                    </div>
+                    
+                    <div class="flex gap-3">
+                        <button type="submit" id="submit-btn"
+                                class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition">
+                            Submit Request
+                        </button>
+                        <button type="reset" 
+                                class="px-6 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium transition">
+                            Clear Form
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Recent Requests -->
+            {% if recent_requests %}
+            <div class="bg-white rounded-xl shadow p-6 mt-6">
+                <h3 class="font-semibold text-gray-800 mb-4">Recent Requests</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">Type</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">Dates</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">Days</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            {% for req in recent_requests %}
+                            <tr>
+                                <td class="px-4 py-3 text-sm text-gray-800">{{ req.get_leave_type_display }}</td>
+                                <td class="px-4 py-3 text-sm text-gray-600">
+                                    {{ req.start_date|date:"M d" }} - {{ req.end_date|date:"M d, Y" }}
+                                </td>
+                                <td class="px-4 py-3 text-sm text-gray-600">{{ req.days_requested }}</td>
+                                <td class="px-4 py-3">
+                                    <span class="px-2 py-1 rounded-full text-xs font-medium
+                                        {% if req.status == 'pending' %}bg-yellow-100 text-yellow-800
+                                        {% elif req.status == 'approved' %}bg-green-100 text-green-800
+                                        {% else %}bg-red-100 text-red-800{% endif %}">
+                                        {{ req.status|title }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>
 
 <script>
-    function checkBalance() {
-        const leaveType = document.getElementById('leave-type').value;
-        if (!leaveType) {
-            alert('Please select a leave type first.');
-            return;
+const leaveBalances = {
+    annual: {{ leave_balances.annual }},
+    vacation: {{ leave_balances.vacation }},
+    sick: {{ leave_balances.sick }},
+    unpaid: 999,  // Unlimited
+    other: 999    // Unlimited
+};
+
+const leaveType = document.getElementById('leave-type');
+const startDate = document.getElementById('start-date');
+const endDate = document.getElementById('end-date');
+const daysCalc = document.getElementById('days-calculation');
+const daysCount = document.getElementById('days-count');
+const availableBalance = document.getElementById('available-balance');
+const balanceWarning = document.getElementById('balance-warning');
+const submitBtn = document.getElementById('submit-btn');
+
+function calculateDays() {
+    const type = leaveType.value;
+    const start = startDate.value;
+    const end = endDate.value;
+    
+    if (type && start && end) {
+        const startDt = new Date(start);
+        const endDt = new Date(end);
+        
+        if (endDt >= startDt) {
+            // Calculate business days (excluding weekends)
+            let days = 0;
+            let current = new Date(startDt);
+            
+            while (current <= endDt) {
+                const dayOfWeek = current.getDay();
+                if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+                    days++;
+                }
+                current.setDate(current.getDate() + 1);
+            }
+            
+            const balance = leaveBalances[type] || 0;
+            
+            daysCalc.classList.remove('hidden');
+            daysCount.textContent = days + ' day' + (days !== 1 ? 's' : '');
+            
+            if (type === 'unpaid' || type === 'other') {
+                availableBalance.textContent = 'Unlimited';
+                availableBalance.className = 'font-bold text-gray-600';
+                balanceWarning.classList.add('hidden');
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            } else {
+                availableBalance.textContent = balance + ' days';
+                
+                if (days > balance) {
+                    availableBalance.className = 'font-bold text-red-600';
+                    balanceWarning.classList.remove('hidden');
+                    submitBtn.disabled = true;
+                    submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                } else {
+                    availableBalance.className = 'font-bold text-green-600';
+                    balanceWarning.classList.add('hidden');
+                    submitBtn.disabled = false;
+                    submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                }
+            }
+        } else {
+            daysCalc.classList.add('hidden');
         }
-        // HTMX will handle the actual balance check
-        htmx.trigger('#leave-type', 'change');
+    } else {
+        daysCalc.classList.add('hidden');
     }
+}
+
+leaveType.addEventListener('change', calculateDays);
+startDate.addEventListener('change', calculateDays);
+endDate.addEventListener('change', calculateDays);
+
+// Set minimum date to today
+const today = new Date().toISOString().split('T')[0];
+startDate.setAttribute('min', today);
+endDate.setAttribute('min', today);
+
+// Update end date min when start date changes
+startDate.addEventListener('change', function() {
+    endDate.setAttribute('min', this.value);
+    if (endDate.value && endDate.value < this.value) {
+        endDate.value = this.value;
+    }
+});
 </script>
 {% endblock %}

@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block title %}Attendance Corrections - Ethos HRMS{% endblock %}
+
+{% block navigation %}
+{% include "components/navbar_hr.html" %}
+{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h2 class="text-2xl font-bold text-gray-800">Attendance Corrections</h2>
+            {% if pending_count > 0 %}
+            <p class="text-sm text-yellow-600">{{ pending_count }} pending request(s)</p>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Messages -->
+    {% if messages %}
+    <div class="mb-6">
+        {% for message in messages %}
+        <div class="p-4 rounded-lg {% if message.tags == 'success' %}bg-green-100 text-green-800{% elif message.tags == 'error' %}bg-red-100 text-red-800{% else %}bg-blue-100 text-blue-800{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    <!-- Filters -->
+    <div class="bg-white rounded-xl shadow p-4 mb-6">
+        <form method="get" class="flex gap-4 items-end">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                <select name="status" class="px-4 py-2 border border-gray-300 rounded-lg">
+                    <option value="">All Status</option>
+                    <option value="pending" {% if current_status == 'pending' %}selected{% endif %}>Pending</option>
+                    <option value="approved" {% if current_status == 'approved' %}selected{% endif %}>Approved</option>
+                    <option value="rejected" {% if current_status == 'rejected' %}selected{% endif %}>Rejected</option>
+                </select>
+            </div>
+            <button type="submit" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg">Filter</button>
+            <a href="{% url 'hr:attendance_corrections' %}" class="px-4 py-2 text-gray-600 hover:text-gray-800">Clear</a>
+        </form>
+    </div>
+    
+    <!-- Corrections Table -->
+    <div class="bg-white rounded-xl shadow overflow-hidden">
+        <table class="w-full">
+            <thead class="bg-gray-100">
+                <tr>
+                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Employee</th>
+                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Date</th>
+                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Current</th>
+                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Requested</th>
+                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Reason</th>
+                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Status</th>
+                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for correction in corrections %}
+                <tr class="border-b border-gray-100 hover:bg-gray-50">
+                    <td class="px-4 py-3">
+                        <p class="font-medium text-gray-800">{{ correction.employee.full_name }}</p>
+                        <p class="text-xs text-gray-500">{{ correction.employee.department.name }}</p>
+                    </td>
+                    <td class="px-4 py-3 text-sm text-gray-600">{{ correction.date|date:"M d, Y" }}</td>
+                    <td class="px-4 py-3 text-sm text-gray-600">
+                        <div>
+                            {{ correction.current_time_in|time:"g:i A"|default:"--" }} - {{ correction.current_time_out|time:"g:i A"|default:"--" }}
+                        </div>
+                        {% if correction.current_status %}
+                        <span class="text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-600">{{ correction.current_status|title }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-3 text-sm">
+                        {% if correction.requested_time_in or correction.requested_time_out %}
+                        <div class="text-green-600 font-medium">
+                            {{ correction.requested_time_in|time:"g:i A"|default:"--" }} - {{ correction.requested_time_out|time:"g:i A"|default:"--" }}
+                        </div>
+                        {% endif %}
+                        {% if correction.requested_status %}
+                        <span class="text-xs px-2 py-0.5 rounded bg-blue-100 text-blue-800">→ {{ correction.requested_status|title }}</span>
+                        {% endif %}
+                        {% if not correction.requested_time_in and not correction.requested_time_out and not correction.requested_status %}
+                        <span class="text-gray-400">No changes</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-3 text-sm text-gray-600 max-w-xs">
+                        <p class="truncate" title="{{ correction.reason }}">{{ correction.reason|truncatewords:10 }}</p>
+                        <p class="text-xs text-gray-400 mt-1">{{ correction.submitted_at|date:"M d, g:i A" }}</p>
+                    </td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-1 rounded-full text-xs font-medium
+                            {% if correction.status == 'pending' %}bg-yellow-100 text-yellow-800
+                            {% elif correction.status == 'approved' %}bg-green-100 text-green-800
+                            {% else %}bg-red-100 text-red-800{% endif %}">
+                            {{ correction.status|title }}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3">
+                        {% if correction.status == 'pending' %}
+                        <div class="flex gap-2">
+                            <form method="post" action="{% url 'hr:approve_correction' correction.pk %}" class="inline">
+                                {% csrf_token %}
+                                <button type="submit" class="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs">
+                                    Approve
+                                </button>
+                            </form>
+                            <form method="post" action="{% url 'hr:reject_correction' correction.pk %}" class="inline">
+                                {% csrf_token %}
+                                <button type="submit" class="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-xs">
+                                    Reject
+                                </button>
+                            </form>
+                        </div>
+                        {% else %}
+                        <span class="text-xs text-gray-500">
+                            {% if correction.reviewed_by %}by {{ correction.reviewed_by.full_name }}{% endif %}
+                            <br>{{ correction.reviewed_at|date:"M d, g:i A" }}
+                        </span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="px-4 py-8 text-center text-gray-500">
+                        No correction requests found.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Two-Factor Authentication - Ethos HRMS{% endblock %}
+
+{% block navigation %}
+{% if user.is_hr %}
+{% include "components/navbar_hr.html" %}
+{% else %}
+{% include "components/navbar_employee.html" %}
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto">
+    <div class="bg-white rounded-xl shadow-lg p-8">
+        <div class="flex items-center gap-4 mb-6">
+            <div class="p-3 bg-green-100 rounded-full">
+                <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                </svg>
+            </div>
+            <div>
+                <h2 class="text-2xl font-bold text-gray-800">Two-Factor Authentication</h2>
+                <p class="text-green-600 font-medium">Enabled</p>
+            </div>
+        </div>
+        
+        <!-- Messages -->
+        {% if messages %}
+        <div class="mb-6">
+            {% for message in messages %}
+            <div class="p-4 rounded-lg {% if message.tags == 'success' %}bg-green-100 text-green-800{% elif message.tags == 'error' %}bg-red-100 text-red-800{% else %}bg-blue-100 text-blue-800{% endif %}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        <div class="bg-gray-50 rounded-lg p-4 mb-6">
+            <h3 class="font-medium text-gray-800 mb-2">Device Information</h3>
+            <div class="text-sm text-gray-600 space-y-1">
+                <p><span class="font-medium">Name:</span> {{ device.name }}</p>
+                <p><span class="font-medium">Added:</span> {{ device.created_at|date:"M d, Y" }}</p>
+                <p><span class="font-medium">Last Used:</span> {{ device.last_used_at|date:"M d, Y g:i A"|default:"Never" }}</p>
+            </div>
+        </div>
+        
+        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+            <h3 class="font-medium text-yellow-800 mb-2">Important</h3>
+            <p class="text-sm text-yellow-700">
+                If you lose access to your authenticator app, you may be locked out of your account. 
+                Consider backing up your authenticator or saving backup codes.
+            </p>
+        </div>
+        
+        <div class="border-t pt-6">
+            <h3 class="font-medium text-gray-800 mb-4">Disable Two-Factor Authentication</h3>
+            <p class="text-sm text-gray-600 mb-4">
+                Disabling 2FA will make your account less secure. You'll only need your password to log in.
+            </p>
+            <a href="{% url 'disable_2fa' %}" 
+               class="inline-block px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm">
+                Disable 2FA
+            </a>
+        </div>
+        
+        <div class="mt-6 text-center">
+            <a href="{% if user.is_hr %}{% url 'hr:settings' %}{% else %}{% url 'employees:settings' %}{% endif %}" 
+               class="text-gray-600 hover:text-gray-800 text-sm">
+                ← Back to Settings
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

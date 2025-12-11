@@ -1,0 +1,71 @@
+<div class="p-4">
+    <h3 class="text-lg font-bold text-gray-800 mb-4">Headcount Report</h3>
+    
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-4 gap-4 mb-6">
+        <div class="bg-green-50 rounded-lg p-4 text-center">
+            <p class="text-2xl font-bold text-green-600">{{ total_active }}</p>
+            <p class="text-sm text-gray-600">Active</p>
+        </div>
+        <div class="bg-blue-50 rounded-lg p-4 text-center">
+            <p class="text-2xl font-bold text-blue-600">{{ total_on_leave }}</p>
+            <p class="text-sm text-gray-600">On Leave</p>
+        </div>
+        <div class="bg-red-50 rounded-lg p-4 text-center">
+            <p class="text-2xl font-bold text-red-600">{{ total_terminated }}</p>
+            <p class="text-sm text-gray-600">Terminated</p>
+        </div>
+        <div class="bg-purple-50 rounded-lg p-4 text-center">
+            <p class="text-2xl font-bold text-purple-600">{{ total_employees }}</p>
+            <p class="text-sm text-gray-600">Total Active</p>
+        </div>
+    </div>
+    
+    <!-- Chart -->
+    <div class="mb-6 h-64">
+        <canvas id="headcountChart"></canvas>
+    </div>
+    
+    <!-- Department Breakdown -->
+    <table class="w-full">
+        <thead class="bg-gray-100">
+            <tr>
+                <th class="px-4 py-2 text-left text-sm font-semibold">Department</th>
+                <th class="px-4 py-2 text-right text-sm font-semibold">Active</th>
+                <th class="px-4 py-2 text-right text-sm font-semibold">On Leave</th>
+                <th class="px-4 py-2 text-right text-sm font-semibold">Terminated</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for dept in departments %}
+            <tr class="border-b">
+                <td class="px-4 py-2 text-sm">{{ dept.name }}</td>
+                <td class="px-4 py-2 text-sm text-right text-green-600">{{ dept.active_count }}</td>
+                <td class="px-4 py-2 text-sm text-right text-blue-600">{{ dept.on_leave_count }}</td>
+                <td class="px-4 py-2 text-sm text-right text-red-600">{{ dept.terminated_count }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+    new Chart(document.getElementById('headcountChart'), {
+        type: 'bar',
+        data: {
+            labels: {{ dept_names|safe }},
+            datasets: [{
+                label: 'Active Employees',
+                data: {{ dept_active|safe }},
+                backgroundColor: 'rgba(34, 197, 94, 0.8)',
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+</script>
