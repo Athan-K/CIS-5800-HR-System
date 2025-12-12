@@ -90,10 +90,15 @@ class EmployeeListView(HRRequiredMixin, ListView):
         if department:
             queryset = queryset.filter(department_id=department)
         
-        # Filter by role/status
+        # Filter by status
         status = self.request.GET.get('status')
         if status:
             queryset = queryset.filter(status=status)
+
+        #Filter by role
+        role = self.request.GET.get('role')
+        if role:
+            queryset = queryset.filter(user__role=role)   
         
         return queryset
     
@@ -487,15 +492,25 @@ class GenerateReportView(ManagerRequiredMixin, TemplateView):
 
 
 
+@login_required
 def generate_report(request):
     """Generate report data based on parameters."""
     from datetime import datetime
     from django.db.models import Avg, Sum
     
-    report_type = request.GET.get('report_type')
-    department_id = request.GET.get('department')
-    start_date_str = request.GET.get('start_date')
-    end_date_str = request.GET.get('end_date')
+    # Handle both GET and POST requests
+    params = request.POST if request.method == 'POST' else request.GET
+    
+    report_type = params.get('report_type')
+    department_id = params.get('department')
+    start_date_str = params.get('start_date')
+    end_date_str = params.get('end_date')
+    
+    # If no report type, show the form
+    if not report_type:
+        return render(request, 'hr/generate_report.html', {
+            'departments': Department.objects.all()
+        })
     
     # Parse dates safely
     start_date = None
@@ -515,6 +530,7 @@ def generate_report(request):
         'report_type': report_type,
         'start_date': start_date,
         'end_date': end_date,
+        'departments': Department.objects.all(),
     }
     
     if report_type == 'headcount':
@@ -528,7 +544,6 @@ def generate_report(request):
             terminated_count=Count('employees', filter=Q(employees__status=Employee.Status.TERMINATED))
         ).order_by('name')
         
-        # Data for chart
         dept_names = [d.name for d in by_department]
         dept_active = [d.active_count for d in by_department]
         
@@ -537,10 +552,11 @@ def generate_report(request):
             'total_active': Employee.objects.filter(status=Employee.Status.ACTIVE).count(),
             'total_on_leave': Employee.objects.filter(status=Employee.Status.ON_LEAVE).count(),
             'total_terminated': Employee.objects.filter(status=Employee.Status.TERMINATED).count(),
-            'departments': by_department,
+            'by_department': by_department,
             'dept_names': dept_names,
             'dept_active': dept_active,
         })
+        return render(request, 'hr/reports/headcount_report.html', context)
     
     elif report_type == 'department':
         departments = Department.objects.annotate(
@@ -549,18 +565,18 @@ def generate_report(request):
             total_salary=Sum('employees__salary', filter=Q(employees__status=Employee.Status.ACTIVE))
         ).order_by('-employee_count')
     
-        # Convert to lists for JSON serialization
         dept_names = list(departments.values_list('name', flat=True))
         dept_counts = [d.employee_count for d in departments]
         dept_salaries = [float(d.avg_salary) if d.avg_salary else 0 for d in departments]
     
         context.update({
-            'departments': departments,
+            'department_list': departments,
             'total_departments': departments.count(),
             'dept_names': dept_names,
             'dept_counts': dept_counts,
             'dept_salaries': dept_salaries,
         })
+        return render(request, 'hr/reports/department_report.html', context)
     
     elif report_type == 'leave':
         leaves = LeaveRequest.objects.all()
@@ -574,7 +590,6 @@ def generate_report(request):
         by_type = leaves.values('leave_type').annotate(count=Count('id')).order_by('-count')
         by_status = leaves.values('status').annotate(count=Count('id')).order_by('-count')
         
-        # Data for charts
         type_labels = [item['leave_type'].title() for item in by_type]
         type_counts = [item['count'] for item in by_type]
         
@@ -593,6 +608,7 @@ def generate_report(request):
             'type_labels': type_labels,
             'type_counts': type_counts,
         })
+        return render(request, 'hr/reports/leave_report.html', context)
     
     elif report_type == 'attendance':
         attendance = Attendance.objects.all()
@@ -623,13 +639,10 @@ def generate_report(request):
             'total_hours': round(float(total_hours), 2),
             'avg_hours_per_day': round(avg_hours, 2),
         })
+        return render(request, 'hr/reports/attendance_report.html', context)
     
     else:
-        return render(request, 'hr/reports/no_report.html', {})
-    
-    template_name = f'hr/reports/{report_type}_report.html'
-    return render(request, template_name, context)
-
+        return render(request, 'hr/reports/no_report.html', context)
 
 class AttendanceCorrectionListView(HRRequiredMixin, ListView):
     """List all attendance correction requests."""
