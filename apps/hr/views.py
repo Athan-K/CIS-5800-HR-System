@@ -530,6 +530,7 @@ class EmployeeCreateView(HRRequiredMixin, CreateView):
                     self.request, 
                     f'Employee "{employee.full_name}" created successfully! '
                     f'Welcome email sent to {employee.user.email}.'
+                    f'Credentials - Email: {employee.user.email} | Password: {password}'
                 )
             else:
                 messages.warning(
