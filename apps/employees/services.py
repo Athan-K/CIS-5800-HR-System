@@ -1,4 +1,3 @@
-from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 from django.conf import settings
@@ -26,22 +25,33 @@ def create_notification(recipient, notification_type, title, message, link=''):
 
 
 def send_email_notification(to_email, subject, template_name, context):
-    """Send an email notification."""
+    """Send an email notification using SendGrid HTTP API."""
     try:
+        from sendgrid import SendGridAPIClient
+        from sendgrid.helpers.mail import Mail, Email, To, Content
+        
+        api_key = os.environ.get('SENDGRID_API_KEY')
+        from_email = os.environ.get('SENDGRID_FROM_EMAIL', settings.DEFAULT_FROM_EMAIL)
+        
+        if not api_key:
+            logger.warning("SENDGRID_API_KEY not set, skipping email")
+            return False
+        
         html_content = render_to_string(template_name, context)
-        text_content = strip_tags(html_content)
         
-        email = EmailMultiAlternatives(
+        message = Mail(
+            from_email=from_email,
+            to_emails=to_email,
             subject=subject,
-            body=text_content,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            to=[to_email]
+            html_content=html_content
         )
-        email.attach_alternative(html_content, "text/html")
-        email.send(fail_silently=True)
         
-        logger.info(f"Email sent to {to_email}: {subject}")
-        return True
+        sg = SendGridAPIClient(api_key)
+        response = sg.send(message)
+        
+        logger.info(f"Email sent to {to_email}: {subject} (status: {response.status_code})")
+        return response.status_code in [200, 201, 202]
+        
     except Exception as e:
         logger.error(f"Email failed to {to_email}: {str(e)}")
         return False
