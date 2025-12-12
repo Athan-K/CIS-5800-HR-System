@@ -29,7 +29,7 @@ class Employee(models.Model):
     
     class Status(models.TextChoices):
         ACTIVE = 'active', 'Active'
-        ON_LEAVE = 'on_leave', 'On Leave'
+        ON_LEAVE = 'on_leave', 'Pending'
         TERMINATED = 'terminated', 'Terminated'
     
     # Link to user account

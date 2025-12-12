@@ -7,6 +7,8 @@ import qrcode
 import qrcode.image.svg
 from io import BytesIO
 import base64
+from django.contrib.auth import logout
+
 
 
 @login_required
@@ -14,6 +16,12 @@ def dashboard_redirect(request):
     """Redirect to appropriate dashboard based on user role."""
     user = request.user
     
+    # Check if employee is terminated
+    if hasattr(user, 'employee_profile') and user.employee_profile.status == 'terminated':
+        messages.error(request, 'Your account has been terminated. Please contact HR.')
+        logout(request)
+        return redirect('account_login')
+
     # HR, Admin, and Manager go to HR dashboard
     if user.role in ['hr', 'admin', 'manager']:
         return redirect('hr:dashboard')

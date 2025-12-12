@@ -332,18 +332,33 @@ class AttendanceCorrectionListView(HRRequiredMixin, ListView):
         queryset = AttendanceCorrection.objects.select_related(
             'employee', 'employee__department'
         ).order_by('-submitted_at')
-        
+    
+    # Search by employee name
+        search = self.request.GET.get('search')
+        if search:
+            queryset = queryset.filter(
+                Q(employee__first_name__icontains=search) |
+                Q(employee__last_name__icontains=search)
+            )
+    
+    # Filter by status
         status = self.request.GET.get('status')
         if status:
             queryset = queryset.filter(status=status)
-        
-        return queryset
     
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['pending_count'] = AttendanceCorrection.objects.filter(status='pending').count()
-        context['current_status'] = self.request.GET.get('status', '')
-        return context
+    # Filter by department
+        department = self.request.GET.get('department')
+        if department:
+            queryset = queryset.filter(employee__department_id=department)
+    
+        return queryset
+
+def get_context_data(self, **kwargs):
+    context = super().get_context_data(**kwargs)
+    context['pending_count'] = AttendanceCorrection.objects.filter(status='pending').count()
+    context['current_status'] = self.request.GET.get('status', '')
+    context['departments'] = Department.objects.all()  # Add this line
+    return context
 
 
 @login_required
@@ -687,17 +702,25 @@ class LeaveRequestListView(ManagerRequiredMixin, ListView):
     
     def get_queryset(self):
         queryset = LeaveRequest.objects.select_related('employee', 'employee__department').order_by('-submitted_at')
-        
-        # Filter by status
+    
+    # Search by employee name
+        search = self.request.GET.get('search')
+        if search:
+            queryset = queryset.filter(
+                Q(employee__first_name__icontains=search) |
+                Q(employee__last_name__icontains=search)
+        )
+    
+    # Filter by status
         status = self.request.GET.get('status')
         if status:
             queryset = queryset.filter(status=status)
-        
-        # Filter by department
+    
+    # Filter by department
         department = self.request.GET.get('department')
         if department:
             queryset = queryset.filter(employee__department_id=department)
-        
+    
         return queryset
     
     def get_context_data(self, **kwargs):
