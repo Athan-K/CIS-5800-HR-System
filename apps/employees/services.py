@@ -4,8 +4,14 @@ from django.utils.html import strip_tags
 from django.conf import settings
 from .models import Notification
 import logging
+import os
 
 logger = logging.getLogger(__name__)
+
+
+def get_base_url():
+    """Get the base URL from environment or default to localhost."""
+    return os.environ.get('BASE_URL', 'http://127.0.0.1:8000')
 
 
 def create_notification(recipient, notification_type, title, message, link=''):
@@ -32,7 +38,7 @@ def send_email_notification(to_email, subject, template_name, context):
             to=[to_email]
         )
         email.attach_alternative(html_content, "text/html")
-        email.send(fail_silently=False)
+        email.send(fail_silently=True)
         
         logger.info(f"Email sent to {to_email}: {subject}")
         return True
@@ -41,9 +47,27 @@ def send_email_notification(to_email, subject, template_name, context):
         return False
 
 
+def send_welcome_email(employee, password):
+    """Send welcome email with login credentials to new employee."""
+    base_url = get_base_url()
+    
+    return send_email_notification(
+        to_email=employee.user.email,
+        subject='Welcome to Ethos HRMS - Your Account Details',
+        template_name='emails/welcome.html',
+        context={
+            'employee': employee,
+            'password': password,
+            'login_url': f'{base_url}/accounts/login/',
+            'base_url': base_url
+        }
+    )
+
+
 def notify_leave_approved(leave_request):
     """Notify employee that their leave request was approved."""
     employee = leave_request.employee
+    base_url = get_base_url()
     
     create_notification(
         recipient=employee,
@@ -57,13 +81,18 @@ def notify_leave_approved(leave_request):
         to_email=employee.user.email,
         subject='Leave Request Approved - Ethos HRMS',
         template_name='emails/leave_approved.html',
-        context={'employee': employee, 'leave_request': leave_request}
+        context={
+            'employee': employee,
+            'leave_request': leave_request,
+            'base_url': base_url
+        }
     )
 
 
 def notify_leave_rejected(leave_request):
     """Notify employee that their leave request was rejected."""
     employee = leave_request.employee
+    base_url = get_base_url()
     
     create_notification(
         recipient=employee,
@@ -77,13 +106,18 @@ def notify_leave_rejected(leave_request):
         to_email=employee.user.email,
         subject='Leave Request Update - Ethos HRMS',
         template_name='emails/leave_rejected.html',
-        context={'employee': employee, 'leave_request': leave_request}
+        context={
+            'employee': employee,
+            'leave_request': leave_request,
+            'base_url': base_url
+        }
     )
 
 
 def notify_correction_approved(correction):
     """Notify employee that their attendance correction was approved."""
     employee = correction.employee
+    base_url = get_base_url()
     
     create_notification(
         recipient=employee,
@@ -97,13 +131,18 @@ def notify_correction_approved(correction):
         to_email=employee.user.email,
         subject='Attendance Correction Approved - Ethos HRMS',
         template_name='emails/correction_approved.html',
-        context={'employee': employee, 'correction': correction}
+        context={
+            'employee': employee,
+            'correction': correction,
+            'base_url': base_url
+        }
     )
 
 
 def notify_correction_rejected(correction):
     """Notify employee that their attendance correction was rejected."""
     employee = correction.employee
+    base_url = get_base_url()
     
     create_notification(
         recipient=employee,
@@ -117,18 +156,9 @@ def notify_correction_rejected(correction):
         to_email=employee.user.email,
         subject='Attendance Correction Update - Ethos HRMS',
         template_name='emails/correction_rejected.html',
-        context={'employee': employee, 'correction': correction}
-    )
-
-def send_welcome_email(employee, password):
-    """Send welcome email with login credentials to new employee."""
-    send_email_notification(
-        to_email=employee.user.email,
-        subject='Welcome to Ethos HRMS - Your Account Details',
-        template_name='emails/welcome.html',
         context={
             'employee': employee,
-            'password': password,
-            'login_url': 'http://127.0.0.1:8000/accounts/login/'
+            'correction': correction,
+            'base_url': base_url
         }
     )

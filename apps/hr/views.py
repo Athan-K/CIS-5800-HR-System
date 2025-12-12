@@ -518,24 +518,29 @@ class EmployeeCreateView(HRRequiredMixin, CreateView):
     
     def form_valid(self, form):
         response = super().form_valid(form)
-        
+    
         if hasattr(form, 'generated_password'):
             employee = form.instance
             password = form.generated_password
-            
-            # Send welcome email with credentials
-            send_welcome_email(employee, password)
-            
-            messages.success(
-                self.request, 
-                f'Employee "{employee.full_name}" created successfully! '
-                f'Login credentials - Email: {employee.user.email} | '
-                f'Temporary Password: {password} | '
-                f'A welcome email has been sent.'
-            )
+        
+            email_sent = send_welcome_email(employee, password)
+        
+            if email_sent:
+                messages.success(
+                    self.request, 
+                    f'Employee "{employee.full_name}" created successfully! '
+                    f'Welcome email sent to {employee.user.email}.'
+                )
+            else:
+                messages.warning(
+                    self.request, 
+                    f'Employee "{employee.full_name}" created successfully! '
+                    f'Email could not be sent. Credentials - '
+                    f'Email: {employee.user.email} | Password: {password}'
+                )
         else:
             messages.success(self.request, f'Employee created successfully!')
-        
+    
         return response
 
 
