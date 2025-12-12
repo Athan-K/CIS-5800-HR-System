@@ -133,57 +133,74 @@ class EmployeeForm(forms.ModelForm):
     
     def save(self, commit=True):
         employee = super().save(commit=False)
-    
-        # If this is a new employee (no user yet)
+
+    # If this is a new employee (no user yet)
         if not employee.pk or not employee.user_id:
             email = self.cleaned_data['email']
             role = self.cleaned_data['role']
-        
-            # Generate a random password
-            random_password = secrets.token_urlsafe(12)
-        
-            # Generate employee ID
+    
+        # Generate a random password
+            random_password = secrets.token_urlsafe(8)  # Shorter, easier to type
+    
+        # Generate employee ID
             last_employee = Employee.objects.order_by('-id').first()
             if last_employee:
                 try:
-                    last_num = int(last_employee.employee_id.replace('EMP', ''))
+                # Handle both EMP and ETH prefixes
+                    emp_id = last_employee.employee_id
+                    num_part = ''.join(filter(str.isdigit, emp_id))
+                    last_num = int(num_part) if num_part else 0
                     new_num = last_num + 1
                 except (ValueError, AttributeError):
                     new_num = Employee.objects.count() + 1
             else:
                 new_num = 1
-            employee.employee_id = f"EMP{new_num:04d}"
-        
-            # Create the user account (NO USERNAME - your model doesn't use it!)
-            user = User.objects.create_user(
+            employee.employee_id = f"ETH{new_num:04d}"
+    
+        # Create username from email
+            username = email.split('@')[0]
+            base_username = username
+            counter = 1
+            while User.objects.filter(username=username).exists():
+                username = f"{base_username}{counter}"
+                counter += 1
+    
+        # Create user manually (more reliable than create_user)
+            user = User(
                 email=email,
-                password=random_password,
+                username=username,
+                role=role,
                 first_name=employee.first_name,
                 last_name=employee.last_name,
+                is_active=True,
             )
-            user.role = role  # Set role after creation
+            user.set_password(random_password)  # Properly hash the password
             user.save()
-        
+    
             employee.user = user
-        
-            # Store password to show after creation
+    
+        # Store password to show after creation
             self.generated_password = random_password
-        
+    
+        # Debug output
             print(f"✓ Created user: {user.email} (ID: {user.pk})")
+            print(f"✓ Username: {user.username}")
             print(f"✓ Generated password: {random_password}")
+            print(f"✓ Password verification: {user.check_password(random_password)}")
+        
         else:
-            # Update existing user's role if changed
+        # Update existing user's role if changed
             if 'role' in self.cleaned_data and employee.user:
                 employee.user.role = self.cleaned_data['role']
                 employee.user.first_name = employee.first_name
                 employee.user.last_name = employee.last_name
                 employee.user.save()
                 print(f"✓ Updated user: {employee.user.email}")
-    
+
         if commit:
             employee.save()
             print(f"✓ Saved employee: {employee.employee_id} - {employee.full_name}")
-    
+
         return employee
 
 

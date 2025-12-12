@@ -1,5 +1,4 @@
 {% extends "base.html" %}
-{% load employee_filters %}
 
 {% block title %}Dashboard - Ethos HRMS{% endblock %}
 
@@ -8,102 +7,177 @@
 {% endblock %}
 
 {% block content %}
-<div class="max-w-6xl mx-auto">
-    <h2 class="text-xl font-semibold text-gray-800 mb-6">Dashboard</h2>
+<div class="max-w-7xl mx-auto">
+    <!-- Welcome Header -->
+    <div class="mb-6">
+        <h2 class="text-2xl font-bold text-gray-800">Welcome back, {{ employee.first_name }}!</h2>
+        <p class="text-gray-600">Here's your overview for today</p>
+    </div>
     
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- My Profile Card -->
-        <div class="bg-gray-100 rounded-xl p-6">
-            <h3 class="font-bold text-gray-800 mb-4">My Profile</h3>
-            <div class="space-y-2 text-sm">
-                <p><span class="text-gray-600">Name:</span> {{ employee.full_name }}</p>
-                <p><span class="text-gray-600">EmplId:</span> {{ employee.employee_id }}</p>
-                <p><span class="text-gray-600">Role:</span> {{ employee.job_title }}</p>
-                <p><span class="text-gray-600">Department:</span> {{ employee.department.name }}</p>
-                <p><span class="text-gray-600">Manager:</span> {% if employee.manager %}{{ employee.manager.full_name }}{% else %}N/A{% endif %}</p>
+    <!-- Quick Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <!-- Annual Leave -->
+        <div class="bg-white rounded-xl shadow p-4 border-l-4 border-green-500">
+            <p class="text-sm text-gray-500">Annual Leave</p>
+            <p class="text-2xl font-bold text-gray-800">{{ employee.annual_leave_balance }} <span class="text-sm font-normal text-gray-500">days</span></p>
+        </div>
+        <!-- Vacation -->
+        <div class="bg-white rounded-xl shadow p-4 border-l-4 border-blue-500">
+            <p class="text-sm text-gray-500">Vacation</p>
+            <p class="text-2xl font-bold text-gray-800">{{ employee.vacation_balance }} <span class="text-sm font-normal text-gray-500">days</span></p>
+        </div>
+        <!-- Sick Leave -->
+        <div class="bg-white rounded-xl shadow p-4 border-l-4 border-yellow-500">
+            <p class="text-sm text-gray-500">Sick Leave</p>
+            <p class="text-2xl font-bold text-gray-800">{{ employee.sick_leave_balance }} <span class="text-sm font-normal text-gray-500">days</span></p>
+        </div>
+        <!-- Attendance Rate -->
+        <div class="bg-white rounded-xl shadow p-4 border-l-4 border-purple-500">
+            <p class="text-sm text-gray-500">Attendance (30 days)</p>
+            <p class="text-2xl font-bold text-gray-800">{{ attendance_rate }}%</p>
+        </div>
+    </div>
+    
+    <!-- Main Content Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Left Column - Calendar (spans 2 columns) -->
+        <div class="lg:col-span-2">
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Attendance Calendar</h3>
+                {% include "employees/partials/calendar.html" %}
+                
+                <!-- Legend -->
+                <div class="flex flex-wrap gap-4 mt-4 pt-4 border-t text-sm">
+                    <div class="flex items-center gap-2">
+                        <span class="w-4 h-4 rounded bg-green-200 border border-green-400"></span>
+                        <span class="text-gray-600">Present</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="w-4 h-4 rounded bg-yellow-200 border border-yellow-400"></span>
+                        <span class="text-gray-600">Late</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="w-4 h-4 rounded bg-red-200 border border-red-400"></span>
+                        <span class="text-gray-600">Absent</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="w-4 h-4 rounded bg-blue-200 border border-blue-400"></span>
+                        <span class="text-gray-600">On Leave</span>
+                    </div>
+                </div>
             </div>
-            <div class="mt-4">
-                <a href="{% url 'employees:profile' %}" class="text-green-600 hover:text-green-700 text-sm font-medium">
+        </div>
+        
+        <!-- Right Column - Profile & Quick Actions -->
+        <div class="space-y-6">
+            <!-- Profile Card -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                        <span class="text-xl font-bold text-green-600">
+                            {{ employee.first_name.0 }}{{ employee.last_name.0 }}
+                        </span>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-800">{{ employee.full_name }}</h3>
+                        <p class="text-sm text-gray-500">{{ employee.job_title }}</p>
+                        <p class="text-xs text-gray-400">{{ employee.department.name|default:"No Department" }}</p>
+                    </div>
+                </div>
+                
+                <div class="space-y-2 text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-gray-500">Employee ID</span>
+                        <span class="text-gray-800 font-medium">{{ employee.employee_id }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-500">Manager</span>
+                        <span class="text-gray-800 font-medium">{{ employee.manager.full_name|default:"N/A" }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-500">Status</span>
+                        <span class="px-2 py-0.5 rounded-full text-xs font-medium
+                            {% if employee.status == 'active' %}bg-green-100 text-green-700
+                            {% elif employee.status == 'on_leave' %}bg-yellow-100 text-yellow-700
+                            {% else %}bg-gray-100 text-gray-700{% endif %}">
+                            {{ employee.get_status_display }}
+                        </span>
+                    </div>
+                </div>
+                
+                <a href="{% url 'employees:profile' %}" 
+                   class="block mt-4 text-center text-sm text-green-600 hover:text-green-700 font-medium">
                     View Full Profile →
                 </a>
             </div>
-        </div>
-        
-        <!-- Attendance Overview Card -->
-        <div class="bg-gray-100 rounded-xl p-6">
-            <h3 class="font-bold text-gray-800 mb-2">Attendance Overview</h3>
             
-            <!-- Interactive Calendar Container -->
-            <div id="attendance-calendar"
-                 hx-get="{% url 'employees:attendance_calendar' %}"
-                 hx-trigger="load"
-                 hx-swap="innerHTML">
-                <!-- Calendar loads here via HTMX -->
-                <div class="flex items-center justify-center h-48">
-                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
+            <!-- Quick Actions -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h3>
+                <div class="space-y-2">
+                    <a href="{% url 'employees:leave_request' %}" 
+                       class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition">
+                        <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="font-medium text-gray-800">Request Leave</p>
+                            <p class="text-xs text-gray-500">Submit a new leave request</p>
+                        </div>
+                    </a>
+                    <a href="{% url 'employees:attendance' %}" 
+                       class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition">
+                        <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="font-medium text-gray-800">View Attendance</p>
+                            <p class="text-xs text-gray-500">Check your attendance history</p>
+                        </div>
+                    </a>
+                    <a href="{% url 'employees:notifications' %}" 
+                       class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition">
+                        <div class="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="font-medium text-gray-800">Notifications</p>
+                            <p class="text-xs text-gray-500">
+                                {% if unread_notification_count %}
+                                {{ unread_notification_count }} unread
+                                {% else %}
+                                No new notifications
+                                {% endif %}
+                            </p>
+                        </div>
+                    </a>
                 </div>
-            </div>
-        </div>
-        
-        <!-- Payslips Card -->
-        <div class="bg-gray-100 rounded-xl p-6">
-            <h3 class="font-bold text-gray-800 mb-4">Payslips</h3>
-            <p class="text-sm text-gray-600 mb-2">Latest Pay Slip:</p>
-            {% if latest_payslip %}
-            <div class="bg-white rounded-lg p-4">
-                <p class="text-sm text-gray-600">{{ latest_payslip.pay_date|date:"M d, Y" }}</p>
-                <p class="text-2xl font-bold text-green-600">${{ latest_payslip.net_pay|floatformat:2 }}</p>
-                <div class="mt-2 text-xs text-gray-500">
-                    <span>Gross: ${{ latest_payslip.gross_pay|floatformat:2 }}</span>
-                    <span class="mx-2">|</span>
-                    <span>Deductions: ${{ latest_payslip.deductions|floatformat:2 }}</span>
-                </div>
-            </div>
-            {% else %}
-            <div class="bg-white rounded-lg p-4 text-center text-gray-500">
-                No payslips available
-            </div>
-            {% endif %}
-            <div class="mt-4">
-                <a href="{% url 'employees:payslips' %}" class="text-green-600 hover:text-green-700 text-sm font-medium">
-                    View All Payslips →
-                </a>
-            </div>
-        </div>
-        
-        <!-- Employee Leave Card -->
-        <div class="bg-gray-100 rounded-xl p-6">
-            <h3 class="font-bold text-gray-800 mb-4">Employee Leave</h3>
-            
-            <div class="space-y-3">
-                <div class="flex justify-between items-center">
-                    <span class="text-sm text-gray-600">Annual:</span>
-                    <span class="px-3 py-1 bg-white rounded text-sm font-medium">{{ leave_balances.annual }} days</span>
-                </div>
-                <div class="flex justify-between items-center">
-                    <span class="text-sm text-gray-600">Vacation:</span>
-                    <span class="px-3 py-1 bg-white rounded text-sm font-medium">{{ leave_balances.vacation }} days</span>
-                </div>
-                <div class="flex justify-between items-center">
-                    <span class="text-sm text-gray-600">Sick Leave:</span>
-                    <span class="px-3 py-1 bg-white rounded text-sm font-medium">{{ leave_balances.sick }} days</span>
-                </div>
-            </div>
-            
-            {% if pending_requests > 0 %}
-            <div class="mt-4 p-3 bg-yellow-50 rounded-lg">
-                <p class="text-sm text-yellow-800">
-                    <span class="font-semibold">{{ pending_requests }}</span> pending request(s)
-                </p>
-            </div>
-            {% endif %}
-            
-            <div class="mt-4">
-                <a href="{% url 'employees:leave_request' %}" class="text-green-600 hover:text-green-700 text-sm font-medium">
-                    Request Leave →
-                </a>
             </div>
         </div>
     </div>
+    
+    <!-- Pending Leave Requests -->
+    {% if pending_leaves %}
+    <div class="mt-6 bg-white rounded-xl shadow-lg p-6">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Pending Leave Requests</h3>
+        <div class="space-y-3">
+            {% for leave in pending_leaves %}
+            <div class="flex items-center justify-between p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                <div>
+                    <p class="font-medium text-gray-800">{{ leave.get_leave_type_display }}</p>
+                    <p class="text-sm text-gray-500">{{ leave.start_date|date:"M d" }} - {{ leave.end_date|date:"M d, Y" }} ({{ leave.days_requested }} days)</p>
+                </div>
+                <span class="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-sm font-medium">Pending</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
 </div>
 {% endblock %}

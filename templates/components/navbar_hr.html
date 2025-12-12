@@ -1,37 +1,67 @@
-<div class="flex">
-    <a href="{% url 'hr:dashboard' %}" 
-       class="px-8 py-3 text-sm font-medium {% if request.resolver_match.url_name == 'dashboard' %}text-indigo-600 border-b-2 border-indigo-600{% else %}text-gray-600 hover:text-gray-800{% endif %}">
-        Home
-    </a>
-    <a href="{% url 'hr:employee_list' %}" 
-       class="px-8 py-3 text-sm font-medium {% if 'employee' in request.resolver_match.url_name %}text-indigo-600 border-b-2 border-indigo-600{% else %}text-gray-600 hover:text-gray-800{% endif %}">
-        Employees
-    </a>
+<nav class="bg-green-100 shadow-sm border-b border-green-200">
+    <div class="max-w-7xl mx-auto px-4">
+        <div class="flex justify-between h-16">
+            <!-- Logo -->
 
-    <a href ="{% url 'hr:department_list' %}" 
-       class="px-8 py-3 text-sm font-medium {% if request.resolver_match.url_name == 'departments' %}text-indigo-600 border-b-2 border-indigo-600{% else %}text-gray-600 hover:text-gray-800{% endif %}">
-        Departments
-    </a>
-
-
-    <a href="{% url 'hr:leave_requests' %}" 
-        class="px-3 py-2 rounded-lg text-sm font-medium {% if 'leave' in request.resolver_match.url_name %}bg-green-100 text-green-700{% else %}text-gray-600 hover:bg-gray-100{% endif %}">
-        Leave Requests
-        {% if pending_leave_count %}<span class="ml-1 px-1.5 py-0.5 bg-red-500 text-white text-xs rounded-full">{{ pending_leave_count }}</span>{% endif %}
-    </a>
-    <a href="{% url 'hr:attendance_corrections' %}" 
-        class="px-3 py-2 rounded-lg text-sm font-medium {% if 'correction' in request.resolver_match.url_name %}bg-green-100 text-green-700{% else %}text-gray-600 hover:bg-gray-100{% endif %}">
-        Corrections
-        {% if pending_correction_count %}<span class="ml-1 px-1.5 py-0.5 bg-red-500 text-white text-xs rounded-full">{{ pending_correction_count }}</span>{% endif %}
-    </a>
-
-    <a href="{% url 'hr:reports' %}" 
-       class="px-8 py-3 text-sm font-medium {% if request.resolver_match.url_name == 'reports' %}text-indigo-600 border-b-2 border-indigo-600{% else %}text-gray-600 hover:text-gray-800{% endif %}">
-        Reports
-    </a>
-    <a href="{% url 'hr:settings' %}" class="px-4 py-2 text-gray-600 hover:text-gray-800 {% if request.resolver_match.url_name == 'settings' %}border-b-2 border-green-500 text-green-600{% endif %}">Settings</a>
-    <a href="{% url 'account_logout' %}" 
-       class="px-8 py-3 text-sm font-medium text-gray-600 hover:text-gray-800">
-        Logout
-    </a>
-</div>
+            
+            <!-- Navigation Links -->
+            <div class="flex items-center space-x-1">
+                <a href="{% url 'hr:dashboard' %}" 
+                   class="px-3 py-2 rounded-lg text-sm font-medium {% if request.resolver_match.url_name == 'dashboard' %}bg-green-200 text-green-800{% else %}text-gray-600 hover:bg-green-50{% endif %}">
+                    Home
+                </a>
+                
+                {% if request.user.role == 'hr' or request.user.role == 'admin' %}
+                <a href="{% url 'hr:employee_list' %}" 
+                   class="px-3 py-2 rounded-lg text-sm font-medium {% if 'employee' in request.resolver_match.url_name %}bg-green-200 text-green-800{% else %}text-gray-600 hover:bg-green-50{% endif %}">
+                    Employees
+                </a>
+                <a href="{% url 'hr:department_list' %}" 
+                   class="px-3 py-2 rounded-lg text-sm font-medium {% if 'department' in request.resolver_match.url_name %}bg-green-200 text-green-800{% else %}text-gray-600 hover:bg-green-50{% endif %}">
+                    Departments
+                </a>
+                {% endif %}
+                
+                <!-- Leave Requests - Managers can see this -->
+                <a href="{% url 'hr:leave_requests' %}" 
+                   class="px-3 py-2 rounded-lg text-sm font-medium {% if 'leave' in request.resolver_match.url_name %}bg-green-200 text-green-800{% else %}text-gray-600 hover:bg-green-50{% endif %}">
+                    Leave Requests
+                    {% if pending_leave_count %}
+                    <span class="ml-1 px-1.5 py-0.5 bg-red-500 text-white text-xs rounded-full">{{ pending_leave_count }}</span>
+                    {% endif %}
+                </a>
+                
+                {% if request.user.role == 'hr' or request.user.role == 'admin' %}
+                <a href="{% url 'hr:attendance_corrections' %}" 
+                   class="px-3 py-2 rounded-lg text-sm font-medium {% if 'correction' in request.resolver_match.url_name %}bg-green-200 text-green-800{% else %}text-gray-600 hover:bg-green-50{% endif %}">
+                    Corrections
+                    {% if pending_correction_count %}
+                    <span class="ml-1 px-1.5 py-0.5 bg-red-500 text-white text-xs rounded-full">{{ pending_correction_count }}</span>
+                    {% endif %}
+                </a>
+                {% endif %}
+                
+                <a href="{% url 'hr:reports' %}" 
+                   class="px-3 py-2 rounded-lg text-sm font-medium {% if 'report' in request.resolver_match.url_name %}bg-green-200 text-green-800{% else %}text-gray-600 hover:bg-green-50{% endif %}">
+                    Reports
+                </a>
+                <a href="{% url 'hr:settings' %}" 
+                   class="px-3 py-2 rounded-lg text-sm font-medium {% if 'settings' in request.resolver_match.url_name %}bg-green-200 text-green-800{% else %}text-gray-600 hover:bg-green-50{% endif %}">
+                    Settings
+                </a>
+            </div>
+            
+            <!-- User Menu -->
+            <div class="flex items-center space-x-4">
+                <div class="text-right">
+                    <span class="text-sm text-gray-600">{{ request.user.email }}</span>
+                    <span class="block text-xs text-gray-400">{{ request.user.get_role_display }}</span>
+                </div>
+                <a href="{% url 'account_logout' %}" 
+                   class="px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg font-medium">
+                    Logout
+                </a>
+            </div>
+        </div>
+    </div>
+</nav>

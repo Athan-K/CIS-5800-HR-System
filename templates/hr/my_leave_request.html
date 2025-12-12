@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}Request Leave - Ethos HRMS{% endblock %}
+
+{% block navigation %}
+{% include "components/navbar_hr.html" %}
+{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="flex items-center justify-between mb-6">
+        <h2 class="text-2xl font-bold text-gray-800">Request Leave</h2>
+        <a href="{% url 'hr:settings' %}" class="text-gray-600 hover:text-gray-800">
+            ← Back to Settings
+        </a>
+    </div>
+    
+    <!-- Messages -->
+    {% if messages %}
+    <div class="mb-6">
+        {% for message in messages %}
+        <div class="p-4 rounded-lg {% if message.tags == 'success' %}bg-green-100 text-green-800{% elif message.tags == 'error' %}bg-red-100 text-red-800{% else %}bg-blue-100 text-blue-800{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    <!-- Leave Balances -->
+    <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Your Leave Balances</h3>
+        <div class="grid grid-cols-3 gap-4">
+            <div class="p-4 bg-green-50 rounded-lg text-center">
+                <p class="text-3xl font-bold text-green-600">{{ leave_balances.annual }}</p>
+                <p class="text-sm text-gray-500">Annual Leave</p>
+            </div>
+            <div class="p-4 bg-blue-50 rounded-lg text-center">
+                <p class="text-3xl font-bold text-blue-600">{{ leave_balances.vacation }}</p>
+                <p class="text-sm text-gray-500">Vacation</p>
+            </div>
+            <div class="p-4 bg-yellow-50 rounded-lg text-center">
+                <p class="text-3xl font-bold text-yellow-600">{{ leave_balances.sick }}</p>
+                <p class="text-sm text-gray-500">Sick Leave</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Leave Request Form -->
+    <div class="bg-white rounded-xl shadow-lg p-6">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Submit Request</h3>
+        
+        <form method="post">
+            {% csrf_token %}
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Leave Type</label>
+                    <select name="leave_type" required
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                        <option value="">Select leave type</option>
+                        <option value="annual">Annual Leave ({{ leave_balances.annual }} days available)</option>
+                        <option value="vacation">Vacation ({{ leave_balances.vacation }} days available)</option>
+                        <option value="sick">Sick Leave ({{ leave_balances.sick }} days available)</option>
+                        <option value="unpaid">Unpaid Leave</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                        <input type="date" name="start_date" required
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                        <input type="date" name="end_date" required
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Reason (Optional)</label>
+                    <textarea name="reason" rows="3"
+                              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                              placeholder="Provide a reason for your leave request..."></textarea>
+                </div>
+                
+                <div class="flex gap-3 pt-4">
+                    <button type="submit"
+                            class="flex-1 py-2 px-4 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition">
+                        Submit Request
+                    </button>
+                    <a href="{% url 'hr:settings' %}"
+                       class="py-2 px-4 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium rounded-lg transition">
+                        Cancel
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

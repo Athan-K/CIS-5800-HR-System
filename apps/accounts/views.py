@@ -11,18 +11,20 @@ import base64
 
 @login_required
 def dashboard_redirect(request):
-    """Redirect users to their appropriate dashboard based on role."""
+    """Redirect to appropriate dashboard based on user role."""
     user = request.user
     
-    # Check if user has 2FA enabled and not yet verified in this session
-    if user.two_factor_enabled and not request.session.get('2fa_verified', False):
-        return redirect('verify_2fa')
-    
-    # Redirect based on user role
-    if user.is_hr:
+    # HR, Admin, and Manager go to HR dashboard
+    if user.role in ['hr', 'admin', 'manager']:
         return redirect('hr:dashboard')
-    else:
+    
+    # Regular employees go to employee dashboard
+    if hasattr(user, 'employee_profile'):
         return redirect('employees:dashboard')
+    
+    # Fallback - no employee profile found
+    messages.error(request, 'No employee profile found. Please contact HR.')
+    return redirect('account_login')
 
 @login_required
 def setup_2fa(request):
@@ -128,8 +130,8 @@ def verify_2fa(request):
             request.session['2fa_verified'] = True
             messages.success(request, 'Verification successful!')
             
-            # Redirect to appropriate dashboard
-            if user.is_hr:
+            # Redirect to appropriate dashboard based on role
+            if user.role in ['hr', 'admin', 'manager']:
                 return redirect('hr:dashboard')
             else:
                 return redirect('employees:dashboard')

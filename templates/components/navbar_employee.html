@@ -1,48 +1,53 @@
-<nav class="bg-green-100 shadow">
+<nav class="bg-green-100 shadow-sm border-b border-green-200">
     <div class="max-w-7xl mx-auto px-4">
-        <div class="flex justify-between items-center h-16">
-            <div class="flex items-center gap-8">
-                <h1 class="text-xl font-bold text-gray-800">Ethos Managing System</h1>
-                <div class="flex gap-1">
-                    <a href="{% url 'employees:dashboard' %}" 
-                       class="px-4 py-2 text-gray-600 hover:text-gray-800 {% if request.resolver_match.url_name == 'dashboard' %}border-b-2 border-green-500 text-green-600{% endif %}">
-                        Dashboard
-                    </a>
-                    <a href="{% url 'employees:profile' %}" 
-                       class="px-4 py-2 text-gray-600 hover:text-gray-800 {% if request.resolver_match.url_name == 'profile' %}border-b-2 border-green-500 text-green-600{% endif %}">
-                        My Profile
-                    </a>
-                    <a href="{% url 'employees:attendance' %}" 
-                       class="px-4 py-2 text-gray-600 hover:text-gray-800 {% if request.resolver_match.url_name == 'attendance' %}border-b-2 border-green-500 text-green-600{% endif %}">
-                        My Attendance
-                    </a>
-                    <a href="{% url 'employees:payslips' %}" 
-                       class="px-4 py-2 text-gray-600 hover:text-gray-800 {% if request.resolver_match.url_name == 'payslips' %}border-b-2 border-green-500 text-green-600{% endif %}">
-                        My Payslips
-                    </a>
-                    <a href="{% url 'employees:leave_request' %}" 
-                       class="px-4 py-2 text-gray-600 hover:text-gray-800 {% if request.resolver_match.url_name == 'leave_request' %}border-b-2 border-green-500 text-green-600{% endif %}">
-                        Leave Request
-                    </a>
-                    <a href="{% url 'employees:settings' %}" 
-                       class="px-4 py-2 text-gray-600 hover:text-gray-800 {% if request.resolver_match.url_name == 'settings' %}border-b-2 border-green-500 text-green-600{% endif %}">
-                        Settings
-                    </a>
-                </div>
-            </div>
-            <div class="flex items-center gap-4">
-                <!-- Notification Bell -->
-                <a href="{% url 'employees:notifications' %}" class="relative p-2 text-gray-600 hover:text-gray-800">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
-                    </svg>
-                    {% if request.user.employee_profile.notifications.filter.is_read == False %}
-                    <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-                    {% endif %}
+        <div class="flex justify-between h-16">
+            <!-- Logo -->
+
+            
+            <!-- Navigation Links -->
+            <div class="flex items-center space-x-1">
+                <a href="{% url 'employees:dashboard' %}" 
+                   class="px-3 py-2 rounded-lg text-sm font-medium {% if request.resolver_match.url_name == 'dashboard' %}bg-green-200 text-green-800{% else %}text-gray-600 hover:bg-green-50{% endif %}">
+                    Dashboard
+                </a>
+                <a href="{% url 'employees:profile' %}" 
+                   class="px-3 py-2 rounded-lg text-sm font-medium {% if request.resolver_match.url_name == 'profile' %}bg-green-200 text-green-800{% else %}text-gray-600 hover:bg-green-50{% endif %}">
+                    My Profile
+                </a>
+                <a href="{% url 'employees:attendance' %}" 
+                   class="px-3 py-2 rounded-lg text-sm font-medium {% if request.resolver_match.url_name == 'attendance' %}bg-green-200 text-green-800{% else %}text-gray-600 hover:bg-green-50{% endif %}">
+                    My Attendance
+                </a>
+                <a href="{% url 'employees:leave_request' %}" 
+                   class="px-3 py-2 rounded-lg text-sm font-medium {% if request.resolver_match.url_name == 'leave_request' %}bg-green-200 text-green-800{% else %}text-gray-600 hover:bg-green-50{% endif %}">
+                    Leave Request
+                </a>
+                <a href="{% url 'employees:settings' %}" 
+                   class="px-3 py-2 rounded-lg text-sm font-medium {% if request.resolver_match.url_name == 'settings' %}bg-green-200 text-green-800{% else %}text-gray-600 hover:bg-green-50{% endif %}">
+                    Settings
                 </a>
                 
+                <!-- Notification Bell -->
+                <a href="{% url 'employees:notifications' %}" 
+                   class="relative px-3 py-2 rounded-lg text-gray-600 hover:bg-green-50">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                    </svg>
+                    {% if unread_notification_count %}
+                    <span class="absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">
+                        {{ unread_notification_count }}
+                    </span>
+                    {% endif %}
+                </a>
+            </div>
+            
+            <!-- User Menu -->
+            <div class="flex items-center space-x-4">
                 <span class="text-sm text-gray-600">{{ request.user.email }}</span>
-                <a href="{% url 'account_logout' %}" class="px-4 py-2 text-gray-600 hover:text-gray-800">Log Out</a>
+                <a href="{% url 'account_logout' %}" 
+                   class="px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg font-medium">
+                    Logout
+                </a>
             </div>
         </div>
     </div>

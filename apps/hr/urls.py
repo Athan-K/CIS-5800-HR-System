@@ -38,4 +38,14 @@ urlpatterns = [
     path('reports/', views.ReportsView.as_view(), name='reports'),
     path('api/reports/', views.generate_report, name='generate_report'),
     path('reports/generate/', views.GenerateReportView.as_view(), name='generate_report_page'),
+
+    # Audit
+    path('audit-log/', views.AuditLogView.as_view(), name='audit_log'),
+    path('backup/', views.backup_database, name='backup_database'),
+    path('export-csv/', views.export_employees_csv, name='export_csv'),
+
+    path('settings/my-leave/', views.MyLeaveRequestView.as_view(), name='my_leave_request'),
+    path('settings/my-leave/history/', views.MyLeaveHistoryView.as_view(), name='my_leave_history'),
 ]
+
+

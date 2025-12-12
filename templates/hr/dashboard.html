@@ -74,106 +74,108 @@
         <div class="lg:col-span-2 space-y-6">
             
             <!-- Pending Leave Requests -->
-            <div class="bg-white rounded-xl shadow-lg p-6">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-lg font-semibold text-gray-800">
-                        Pending Leave Requests
-                        {% if pending_leave_count > 0 %}
-                        <span class="ml-2 px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">{{ pending_leave_count }}</span>
-                        {% endif %}
-                    </h3>
-                    <a href="{% url 'hr:leave_requests' %}?status=pending" class="text-green-600 hover:text-green-700 text-sm">View All →</a>
-                </div>
-                
-                {% if pending_leave_requests %}
-                <div class="space-y-3">
-                    {% for request in pending_leave_requests %}
-                    <div class="flex items-center justify-between p-4 bg-yellow-50 border border-yellow-100 rounded-lg">
-                        <div class="flex-1">
-                            <p class="font-medium text-gray-800">{{ request.employee.full_name }}</p>
-                            <p class="text-sm text-gray-600">
-                                {{ request.get_leave_type_display }} • {{ request.start_date|date:"M d" }} - {{ request.end_date|date:"M d" }}
-                                <span class="text-gray-400">({{ request.days_requested }} days)</span>
-                            </p>
-                        </div>
-                        <div class="flex gap-2">
-                            <form method="post" action="{% url 'hr:approve_leave' request.pk %}">
-                                {% csrf_token %}
-                                <button type="submit" class="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs">
-                                    Approve
-                                </button>
-                            </form>
-                            <form method="post" action="{% url 'hr:reject_leave' request.pk %}">
-                                {% csrf_token %}
-                                <button type="submit" class="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-xs">
-                                    Reject
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-                {% else %}
-                <div class="text-center py-8 text-gray-500">
-                    <svg class="mx-auto h-12 w-12 text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                    <p>No pending leave requests</p>
-                </div>
-                {% endif %}
+<div class="bg-white rounded-xl shadow-lg p-6">
+    <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-semibold text-gray-800">
+            Pending Leave Requests
+            {% if pending_leave_count > 0 %}
+            <span class="ml-2 px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">{{ pending_leave_count }}</span>
+            {% endif %}
+        </h3>
+        <a href="{% url 'hr:leave_requests' %}?status=pending" class="text-green-600 hover:text-green-700 text-sm">View All →</a>
+    </div>
+    
+    {% if pending_leave_requests %}
+    <div class="space-y-3">
+        {% for leave in pending_leave_requests %}
+        <div class="flex items-center justify-between p-4 bg-yellow-50 border border-yellow-100 rounded-lg">
+            <div class="flex-1">
+                <p class="font-medium text-gray-800">{{ leave.employee.full_name }}</p>
+                <p class="text-sm text-gray-600">
+                    {{ leave.get_leave_type_display }} • {{ leave.start_date|date:"M d" }} - {{ leave.end_date|date:"M d" }}
+                    <span class="text-gray-400">({{ leave.days_requested }} days)</span>
+                </p>
             </div>
-            
-            <!-- Pending Attendance Corrections -->
-            <div class="bg-white rounded-xl shadow-lg p-6">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-lg font-semibold text-gray-800">
-                        Attendance Corrections
-                        {% if pending_correction_count > 0 %}
-                        <span class="ml-2 px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full">{{ pending_correction_count }}</span>
-                        {% endif %}
-                    </h3>
-                    <a href="{% url 'hr:attendance_corrections' %}?status=pending" class="text-green-600 hover:text-green-700 text-sm">View All →</a>
-                </div>
-                
-                {% if pending_corrections %}
-                <div class="space-y-3">
-                    {% for correction in pending_corrections %}
-                    <div class="flex items-center justify-between p-4 bg-purple-50 border border-purple-100 rounded-lg">
-                        <div class="flex-1">
-                            <p class="font-medium text-gray-800">{{ correction.employee.full_name }}</p>
-                            <p class="text-sm text-gray-600">
-                                {{ correction.date|date:"M d, Y" }} • 
-                                Requested: {{ correction.requested_time_in|time:"H:i"|default:"--" }} - {{ correction.requested_time_out|time:"H:i"|default:"--" }}
-                            </p>
-                            <p class="text-xs text-gray-500 mt-1">{{ correction.reason|truncatewords:15 }}</p>
-                        </div>
-                        <div class="flex gap-2">
-                            <form method="post" action="{% url 'hr:approve_correction' correction.pk %}">
-                                {% csrf_token %}
-                                <button type="submit" class="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs">
-                                    Approve
-                                </button>
-                            </form>
-                            <form method="post" action="{% url 'hr:reject_correction' correction.pk %}">
-                                {% csrf_token %}
-                                <button type="submit" class="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-xs">
-                                    Reject
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-                {% else %}
-                <div class="text-center py-8 text-gray-500">
-                    <svg class="mx-auto h-12 w-12 text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                    <p>No pending corrections</p>
-                </div>
-                {% endif %}
+            <div class="flex gap-2">
+                <form method="post" action="{% url 'hr:approve_leave' leave.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs">
+                        Approve
+                    </button>
+                </form>
+                <form method="post" action="{% url 'hr:reject_leave' leave.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-xs">
+                        Reject
+                    </button>
+                </form>
             </div>
         </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-8 text-gray-500">
+        <svg class="mx-auto h-12 w-12 text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <p>No pending leave requests</p>
+    </div>
+    {% endif %}
+</div>
+
+{% if request.user.role == 'hr' or request.user.role == 'admin' %}
+<!-- Pending Attendance Corrections - HR/Admin only -->
+<div class="bg-white rounded-xl shadow-lg p-6">
+    <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-semibold text-gray-800">
+            Attendance Corrections
+            {% if pending_correction_count > 0 %}
+            <span class="ml-2 px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full">{{ pending_correction_count }}</span>
+            {% endif %}
+        </h3>
+        <a href="{% url 'hr:attendance_corrections' %}?status=pending" class="text-green-600 hover:text-green-700 text-sm">View All →</a>
+    </div>
+    
+    {% if pending_corrections %}
+    <div class="space-y-3">
+        {% for correction in pending_corrections %}
+        <div class="flex items-center justify-between p-4 bg-purple-50 border border-purple-100 rounded-lg">
+            <div class="flex-1">
+                <p class="font-medium text-gray-800">{{ correction.employee.full_name }}</p>
+                <p class="text-sm text-gray-600">
+                    {{ correction.date|date:"M d, Y" }} • 
+                    Requested: {{ correction.requested_time_in|time:"H:i"|default:"--" }} - {{ correction.requested_time_out|time:"H:i"|default:"--" }}
+                </p>
+                <p class="text-xs text-gray-500 mt-1">{{ correction.reason|truncatewords:15 }}</p>
+            </div>
+            <div class="flex gap-2">
+                <form method="post" action="{% url 'hr:approve_correction' correction.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs">
+                        Approve
+                    </button>
+                </form>
+                <form method="post" action="{% url 'hr:reject_correction' correction.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-xs">
+                        Reject
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-8 text-gray-500">
+        <svg class="mx-auto h-12 w-12 text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <p>No pending corrections</p>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+</div>
         
         <!-- Right Sidebar -->
         <div class="space-y-6">
@@ -198,26 +200,62 @@
             </div>
             
             <!-- Quick Actions -->
-            <div class="bg-white rounded-xl shadow-lg p-6">
-                <h3 class="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h3>
-                <div class="space-y-2">
-                    <a href="{% url 'hr:employee_create' %}" 
-                       class="block w-full px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm text-center transition">
-                        + Add Employee
-                    </a>
-                    <a href="{% url 'hr:department_create' %}" 
-                       class="block w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm text-center transition">
-                        + Add Department
-                    </a>
-                    <a href="{% url 'hr:employee_list' %}" 
-                       class="block w-full px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-sm text-center transition">
-                        View All Employees
-                    </a>
-                    <a href="{% url 'hr:reports' %}" 
-                       class="block w-full px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-sm text-center transition">
-                        Generate Reports
-                    </a>
-                </div>
+<div class="bg-white rounded-xl shadow-lg p-6">
+    <h3 class="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h3>
+    <div class="space-y-2">
+        {% if request.user.role == 'hr' or request.user.role == 'admin' %}
+        <a href="{% url 'hr:employee_create' %}" 
+           class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition">
+            <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+                </svg>
+            </div>
+            <div>
+                <p class="font-medium text-gray-800">Add Employee</p>
+                <p class="text-xs text-gray-500">Create a new employee record</p>
+            </div>
+        </a>
+        <a href="{% url 'hr:department_create' %}" 
+           class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition">
+            <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                </svg>
+            </div>
+            <div>
+                <p class="font-medium text-gray-800">Add Department</p>
+                <p class="text-xs text-gray-500">Create a new department</p>
+            </div>
+        </a>
+        {% endif %}
+        
+        <a href="{% url 'hr:reports' %}" 
+           class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition">
+            <div class="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
+                <svg class="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                </svg>
+            </div>
+            <div>
+                <p class="font-medium text-gray-800">View Reports</p>
+                <p class="text-xs text-gray-500">Analytics and insights</p>
+            </div>
+        </a>
+        <a href="{% url 'hr:generate_report_page' %}" 
+           class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition">
+            <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+            </div>
+            <div>
+                <p class="font-medium text-gray-800">Generate Report</p>
+                <p class="text-xs text-gray-500">Create custom reports</p>
+            </div>
+        </a>
+    </div>
+</div>
             </div>
         </div>
     </div>

@@ -8,10 +8,10 @@ from django.shortcuts import redirect
 
 
 class HRRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
-    """Mixin that requires user to be HR staff."""
+    """Mixin that requires user to be HR or Admin only - full access."""
     
     def test_func(self):
-        return self.request.user.is_hr
+        return self.request.user.role in ['hr', 'admin']
     
     def handle_no_permission(self):
         if self.request.user.is_authenticated:
@@ -20,10 +20,10 @@ class HRRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
 
 
 class ManagerRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
-    """Mixin that requires user to be a manager or HR."""
+    """Mixin that requires user to be Manager, HR, or Admin - for leave requests and reports."""
     
     def test_func(self):
-        return self.request.user.is_manager
+        return self.request.user.role in ['manager', 'hr', 'admin']
     
     def handle_no_permission(self):
         if self.request.user.is_authenticated:
@@ -31,10 +31,13 @@ class ManagerRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
         return super().handle_no_permission()
 
 
-class EmployeeRequiredMixin(LoginRequiredMixin):
+class EmployeeRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
     """Mixin that requires user to have an employee profile."""
     
-    def dispatch(self, request, *args, **kwargs):
-        if not hasattr(request.user, 'employee_profile'):
-            return redirect('no_profile')
-        return super().dispatch(request, *args, **kwargs)
+    def test_func(self):
+        return hasattr(self.request.user, 'employee_profile')
+    
+    def handle_no_permission(self):
+        if self.request.user.is_authenticated:
+            raise PermissionDenied("No employee profile found. Please contact HR.")
+        return super().handle_no_permission()

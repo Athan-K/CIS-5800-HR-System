@@ -8,165 +8,148 @@
 
 {% block content %}
 <div class="max-w-4xl mx-auto">
-    <div class="bg-gray-200 border border-gray-300 rounded-lg p-8">
-        <h2 class="text-xl font-semibold text-gray-800 mb-6">My Profile</h2>
+    <h2 class="text-2xl font-bold text-gray-800 mb-6">My Profile</h2>
+    
+    <!-- Profile Header -->
+    <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+        <div class="flex items-center gap-6">
+            <div class="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center">
+                <span class="text-3xl font-bold text-green-600">
+                    {{ employee.first_name.0 }}{{ employee.last_name.0 }}
+                </span>
+            </div>
+            <div>
+                <h3 class="text-2xl font-bold text-gray-800">{{ employee.full_name }}</h3>
+                <p class="text-gray-600">{{ employee.job_title }}</p>
+                <p class="text-sm text-gray-500">{{ employee.department.name|default:"No Department" }}</p>
+                <span class="inline-block mt-2 px-3 py-1 rounded-full text-sm font-medium
+                    {% if employee.status == 'active' %}bg-green-100 text-green-700
+                    {% elif employee.status == 'on_leave' %}bg-yellow-100 text-yellow-700
+                    {% else %}bg-gray-100 text-gray-700{% endif %}">
+                    {{ employee.get_status_display }}
+                </span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Personal Information -->
+        <div class="bg-white rounded-xl shadow-lg p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">Personal Information</h3>
+            
+            <div class="space-y-4">
+                <div>
+                    <p class="text-sm text-gray-500">Employee ID</p>
+                    <p class="text-gray-800 font-medium">{{ employee.employee_id }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Email</p>
+                    <p class="text-gray-800 font-medium">{{ employee.user.email }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Phone</p>
+                    <p class="text-gray-800 font-medium">{{ employee.phone|default:"Not provided" }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Date of Birth</p>
+                    <p class="text-gray-800 font-medium">{{ employee.date_of_birth|date:"F d, Y"|default:"Not provided" }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Address</p>
+                    <p class="text-gray-800 font-medium">{{ employee.address|default:"Not provided"|linebreaksbr }}</p>
+                </div>
+            </div>
+        </div>
         
-        <form method="post" id="profile-form">
-            {% csrf_token %}
+        <!-- Employment Details -->
+        <div class="bg-white rounded-xl shadow-lg p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">Employment Details</h3>
             
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- Full Name (Read-only) -->
+            <div class="space-y-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
-                    <input type="text" 
-                           value="{{ employee.full_name }}"
-                           readonly
-                           disabled
-                           class="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-600">
+                    <p class="text-sm text-gray-500">Department</p>
+                    <p class="text-gray-800 font-medium">{{ employee.department.name|default:"Not assigned" }}</p>
                 </div>
-                
-                <!-- Employee ID (Read-only) -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Employee ID</label>
-                    <input type="text" 
-                           value="{{ employee.employee_id }}"
-                           readonly
-                           disabled
-                           class="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-600">
+                    <p class="text-sm text-gray-500">Job Title</p>
+                    <p class="text-gray-800 font-medium">{{ employee.job_title }}</p>
                 </div>
-                
-                <!-- Department (Read-only) -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Department</label>
-                    <input type="text" 
-                           value="{{ employee.department.name|default:'N/A' }}"
-                           readonly
-                           disabled
-                           class="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-600">
+                    <p class="text-sm text-gray-500">Manager</p>
+                    <p class="text-gray-800 font-medium">{{ employee.manager.full_name|default:"None" }}</p>
                 </div>
-                
-                <!-- Role/Title (Read-only) -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Role/Title</label>
-                    <input type="text" 
-                           value="{{ employee.job_title }}"
-                           readonly
-                           disabled
-                           class="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-600">
+                    <p class="text-sm text-gray-500">Start Date</p>
+                    <p class="text-gray-800 font-medium">{{ employee.start_date|date:"F d, Y" }}</p>
                 </div>
-                
-                <!-- Email (Read-only) -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                    <input type="email" 
-                           value="{{ employee.email }}"
-                           readonly
-                           disabled
-                           class="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-600">
-                </div>
-                
-                <!-- Phone (Editable) -->
-                <div>
-                    <label for="id_phone" class="block text-sm font-medium text-gray-700 mb-2">Phone</label>
-                    {{ form.phone }}
-                    {% if form.phone.errors %}
-                    <p class="text-red-500 text-xs mt-1">{{ form.phone.errors.0 }}</p>
-                    {% endif %}
-                </div>
-                
-                <!-- Address (Editable) -->
-                <div class="md:col-span-1">
-                    <label for="id_address" class="block text-sm font-medium text-gray-700 mb-2">Address</label>
-                    {{ form.address }}
-                    {% if form.address.errors %}
-                    <p class="text-red-500 text-xs mt-1">{{ form.address.errors.0 }}</p>
-                    {% endif %}
-                </div>
-                
-                <!-- Emergency Contact (Editable) -->
-                <div>
-                    <label for="id_emergency_contact" class="block text-sm font-medium text-gray-700 mb-2">Emergency Contact</label>
-                    {{ form.emergency_contact }}
-                    {% if form.emergency_contact.errors %}
-                    <p class="text-red-500 text-xs mt-1">{{ form.emergency_contact.errors.0 }}</p>
-                    {% endif %}
+                    <p class="text-sm text-gray-500">Status</p>
+                    <p class="text-gray-800 font-medium">{{ employee.get_status_display }}</p>
                 </div>
             </div>
+        </div>
+        
+        <!-- Emergency Contact -->
+        <div class="bg-white rounded-xl shadow-lg p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">Emergency Contact</h3>
             
-            <!-- Action Buttons -->
-            <div class="flex gap-3 mt-8">
-                <button type="button" 
-                        onclick="enableEdit()"
-                        id="edit-btn"
-                        class="px-6 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-lg transition">
-                    Edit
-                </button>
-                <button type="submit" 
-                        id="save-btn"
-                        disabled
-                        class="px-6 py-2 bg-gray-300 text-gray-500 rounded-lg transition disabled:opacity-50">
-                    Save
-                </button>
-                <button type="button" 
-                        onclick="cancelEdit()"
-                        id="cancel-btn"
-                        disabled
-                        class="px-6 py-2 bg-gray-300 text-gray-500 rounded-lg transition disabled:opacity-50">
-                    Cancel
-                </button>
+            <div class="space-y-4">
+                <div>
+                    <p class="text-sm text-gray-500">Contact Name</p>
+                    <p class="text-gray-800 font-medium">{{ employee.emergency_contact|default:"Not provided" }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Contact Phone</p>
+                    <p class="text-gray-800 font-medium">{{ employee.emergency_phone|default:"Not provided" }}</p>
+                </div>
             </div>
-        </form>
+        </div>
+        
+        <!-- Leave Balances -->
+<div class="bg-white rounded-xl shadow-lg p-6">
+    <h3 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">Leave Balances</h3>
+    
+    <div class="space-y-4">
+        <div>
+            <div class="flex justify-between mb-1">
+                <p class="text-sm text-gray-500">Annual Leave</p>
+                <p class="text-sm font-medium text-gray-800">{{ employee.annual_leave_balance }} days</p>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2">
+                <div class="bg-green-500 h-2 rounded-full" style="width: calc({{ employee.annual_leave_balance }} / 20 * 100%); max-width: 100%;"></div>
+            </div>
+        </div>
+        <div>
+            <div class="flex justify-between mb-1">
+                <p class="text-sm text-gray-500">Vacation</p>
+                <p class="text-sm font-medium text-gray-800">{{ employee.vacation_balance }} days</p>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2">
+                <div class="bg-blue-500 h-2 rounded-full" style="width: calc({{ employee.vacation_balance }} / 15 * 100%); max-width: 100%;"></div>
+            </div>
+        </div>
+        <div>
+            <div class="flex justify-between mb-1">
+                <p class="text-sm text-gray-500">Sick Leave</p>
+                <p class="text-sm font-medium text-gray-800">{{ employee.sick_leave_balance }} days</p>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2">
+                <div class="bg-yellow-500 h-2 rounded-full" style="width: calc({{ employee.sick_leave_balance }} / 15 * 100%); max-width: 100%;"></div>
+            </div>
+        </div>
     </div>
 </div>
-
-<script>
-    const editableFields = ['id_phone', 'id_address', 'id_emergency_contact', 'id_emergency_phone'];
-    let originalValues = {};
     
-    function enableEdit() {
-        // Store original values
-        editableFields.forEach(id => {
-            const field = document.getElementById(id);
-            if (field) {
-                originalValues[id] = field.value;
-                field.disabled = false;
-                field.classList.remove('bg-gray-100');
-                field.classList.add('bg-white');
-            }
-        });
-        
-        // Toggle buttons
-        document.getElementById('edit-btn').disabled = true;
-        document.getElementById('save-btn').disabled = false;
-        document.getElementById('cancel-btn').disabled = false;
-        
-        document.getElementById('save-btn').classList.remove('text-gray-500');
-        document.getElementById('save-btn').classList.add('text-gray-800', 'hover:bg-gray-400');
-        document.getElementById('cancel-btn').classList.remove('text-gray-500');
-        document.getElementById('cancel-btn').classList.add('text-gray-800', 'hover:bg-gray-400');
-    }
-    
-    function cancelEdit() {
-        // Restore original values
-        editableFields.forEach(id => {
-            const field = document.getElementById(id);
-            if (field && originalValues[id] !== undefined) {
-                field.value = originalValues[id];
-                field.disabled = true;
-                field.classList.add('bg-gray-100');
-                field.classList.remove('bg-white');
-            }
-        });
-        
-        // Toggle buttons
-        document.getElementById('edit-btn').disabled = false;
-        document.getElementById('save-btn').disabled = true;
-        document.getElementById('cancel-btn').disabled = true;
-        
-        document.getElementById('save-btn').classList.add('text-gray-500');
-        document.getElementById('save-btn').classList.remove('text-gray-800', 'hover:bg-gray-400');
-        document.getElementById('cancel-btn').classList.add('text-gray-500');
-        document.getElementById('cancel-btn').classList.remove('text-gray-800', 'hover:bg-gray-400');
-    }
-</script>
+    <!-- Info Message -->
+    <div class="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+        <div class="flex items-center gap-3">
+            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <p class="text-sm text-blue-800">
+                To update your profile information, please contact HR.
+            </p>
+        </div>
+    </div>
+</div>
 {% endblock %}

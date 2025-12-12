@@ -11,7 +11,7 @@ from apps.core.mixins import EmployeeRequiredMixin
 from django.views.generic import TemplateView, UpdateView
 from .models import Employee, Attendance, Payslip, LeaveRequest, AttendanceCorrection, Notification
 from .forms import LeaveRequestForm, ProfileUpdateForm
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 
 
 
@@ -51,26 +51,29 @@ class EmployeeDashboardView(EmployeeRequiredMixin, TemplateView):
         absent_count = monthly_attendance.filter(status='absent').count()
         leave_count = monthly_attendance.filter(status='on_leave').count()
         
-        # Get last recorded attendance
-        last_attendance = employee.attendance_records.order_by('-date').first()
+        # Calculate attendance rate (last 30 days)
+        thirty_days_ago = today - timedelta(days=30)
+        recent_attendance = employee.attendance_records.filter(date__gte=thirty_days_ago)
+        total_records = recent_attendance.count()
+        present_days = recent_attendance.filter(status__in=['present', 'late']).count()
+        attendance_rate = round((present_days / total_records * 100), 1) if total_records > 0 else 100
+        
+        # Get pending leave requests
+        pending_leaves = employee.leave_requests.filter(
+            status=LeaveRequest.Status.PENDING
+        ).order_by('-submitted_at')[:3]
         
         context['employee'] = employee
-        context['recent_attendance'] = employee.attendance_records.all()[:5]
-        context['latest_payslip'] = employee.payslips.first()
-        context['pending_requests'] = employee.leave_requests.filter(
-            status=LeaveRequest.Status.PENDING
-        ).count()
-        context['leave_balances'] = {
-            'annual': employee.annual_leave_balance,
-            'vacation': employee.vacation_balance,
-            'sick': employee.sick_leave_balance,
-        }
+        context['attendance_rate'] = attendance_rate
+        context['pending_leaves'] = pending_leaves
         
         # Calendar data
         context['calendar_weeks'] = month_days
         context['attendance_dict'] = attendance_dict
         context['current_month'] = today.strftime('%B %Y')
         context['today'] = today.day
+        context['year'] = today.year
+        context['month'] = today.month
         
         # Monthly stats
         context['monthly_stats'] = {
@@ -78,9 +81,7 @@ class EmployeeDashboardView(EmployeeRequiredMixin, TemplateView):
             'late': late_count,
             'absent': absent_count,
             'on_leave': leave_count,
-            'total_days': present_count + late_count + absent_count + leave_count,
         }
-        context['last_attendance'] = last_attendance
         
         return context
 

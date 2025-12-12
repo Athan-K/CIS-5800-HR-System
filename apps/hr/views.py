@@ -1,7 +1,9 @@
 """
 HR management views.
 """
-
+import csv
+import json
+from django.http import HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.db.models import Count, Q
@@ -9,6 +11,7 @@ from django.utils import timezone
 from django.http import JsonResponse
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, TemplateView
 from django.urls import reverse_lazy
+from django.core.exceptions import PermissionDenied
 from apps.core.mixins import HRRequiredMixin, ManagerRequiredMixin
 from apps.employees.models import Employee, Department, LeaveRequest, Attendance, AttendanceCorrection
 from .forms import EmployeeForm, EmployeeSearchForm
@@ -19,10 +22,16 @@ from apps.employees.services import (
     notify_leave_approved, 
     notify_leave_rejected,
     notify_correction_approved,
-    notify_correction_rejected
+    notify_correction_rejected,
+    send_welcome_email
 )
 
-class HRDashboardView(HRRequiredMixin, TemplateView):
+
+# ============================================
+# MANAGER ACCESS (Manager, HR, Admin)
+# ============================================
+
+class HRDashboardView(ManagerRequiredMixin, TemplateView):
     """HR Dashboard with overview statistics."""
     template_name = 'hr/dashboard.html'
     
@@ -62,106 +71,10 @@ class HRDashboardView(HRRequiredMixin, TemplateView):
         # Recent activity (from audit log)
         context['recent_changes'] = Employee.history.all()[:10]
         
+        # Check if user is full HR (not just manager)
+        context['is_full_hr'] = self.request.user.role in ['hr', 'admin']
+        
         return context
-
-
-class EmployeeListView(HRRequiredMixin, ListView):
-    """List all employees with search and filter."""
-    model = Employee
-    template_name = 'hr/employee_list.html'
-    context_object_name = 'employees'
-    paginate_by = 15
-    
-    def get_queryset(self):
-        queryset = Employee.objects.select_related('department', 'user')
-        
-        # Search
-        search = self.request.GET.get('search', '')
-        if search:
-            queryset = queryset.filter(
-                Q(first_name__icontains=search) |
-                Q(last_name__icontains=search) |
-                Q(employee_id__icontains=search) |
-                Q(user__email__icontains=search)
-            )
-        
-        # Filter by department
-        department = self.request.GET.get('department')
-        if department:
-            queryset = queryset.filter(department_id=department)
-        
-        # Filter by status
-        status = self.request.GET.get('status')
-        if status:
-            queryset = queryset.filter(status=status)
-
-        #Filter by role
-        role = self.request.GET.get('role')
-        if role:
-            queryset = queryset.filter(user__role=role)   
-        
-        return queryset
-    
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['departments'] = Department.objects.all()
-        context['search_form'] = EmployeeSearchForm(self.request.GET)
-        return context
-
-
-from apps.employees.services import send_welcome_email
-
-class EmployeeCreateView(HRRequiredMixin, CreateView):
-    """Create a new employee."""
-    model = Employee
-    form_class = EmployeeForm
-    template_name = 'hr/employee_form.html'
-    success_url = reverse_lazy('hr:employee_list')
-    
-    def form_valid(self, form):
-        response = super().form_valid(form)
-        
-        if hasattr(form, 'generated_password'):
-            employee = form.instance
-            password = form.generated_password
-            
-            # Send welcome email with credentials
-            send_welcome_email(employee, password)
-            
-            messages.success(
-                self.request, 
-                f'Employee "{employee.full_name}" created successfully! '
-                f'Login credentials - Email: {employee.user.email} | '
-                f'Temporary Password: {password} | '
-                f'A welcome email has been sent.'
-            )
-        else:
-            messages.success(self.request, f'Employee created successfully!')
-        
-        return response
-
-
-class EmployeeUpdateView(HRRequiredMixin, UpdateView):
-    """Update employee details."""
-    model = Employee
-    form_class = EmployeeForm
-    template_name = 'hr/employee_form.html'
-    success_url = reverse_lazy('hr:employee_list')
-    
-    def form_valid(self, form):
-        messages.success(self.request, 'Employee updated successfully!')
-        return super().form_valid(form)
-
-
-class EmployeeDeleteView(HRRequiredMixin, DeleteView):
-    """Delete employee (with confirmation)."""
-    model = Employee
-    template_name = 'hr/employee_confirm_delete.html'
-    success_url = reverse_lazy('hr:employee_list')
-    
-    def delete(self, request, *args, **kwargs):
-        messages.success(request, 'Employee deleted successfully!')
-        return super().delete(request, *args, **kwargs)
 
 
 class ReportsView(ManagerRequiredMixin, TemplateView):
@@ -214,7 +127,6 @@ class ReportsView(ManagerRequiredMixin, TemplateView):
         context['monthly_headcount'] = monthly_data
         
         # Salary distribution by department
-        from django.db.models import Avg, Sum
         salary_by_dept = Department.objects.annotate(
             avg_salary=Avg('employees__salary', filter=Q(employees__status=Employee.Status.ACTIVE)),
             total_salary=Sum('employees__salary', filter=Q(employees__status=Employee.Status.ACTIVE))
@@ -249,7 +161,6 @@ class ReportsView(ManagerRequiredMixin, TemplateView):
         context['tenure_counts'] = list(tenure_ranges.values())
         
         # Recent hires (last 30 days)
-        from datetime import timedelta
         thirty_days_ago = date.today() - timedelta(days=30)
         context['recent_hires'] = Employee.objects.filter(
             start_date__gte=thirty_days_ago
@@ -262,224 +173,6 @@ class ReportsView(ManagerRequiredMixin, TemplateView):
         
         return context
 
-class DepartmentCreateView(HRRequiredMixin, CreateView):
-    """Create new department."""
-    model = Department
-    fields = ['name', 'description']
-    template_name = 'hr/department_form.html'
-    success_url = reverse_lazy('hr:dashboard')
-    
-    def get_form(self, form_class=None):
-        form = super().get_form(form_class)
-        form.fields['name'].widget.attrs.update({
-            'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500'
-        })
-        form.fields['description'].widget.attrs.update({
-            'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500',
-            'rows': 3
-        })
-        return form
-    
-    def form_valid(self, form):
-        messages.success(self.request, 'Department created successfully!')
-        return super().form_valid(form)
-
-class DepartmentListView(HRRequiredMixin, ListView):
-    """List all departments."""
-    model = Department
-    template_name = 'hr/department_list.html'
-    context_object_name = 'departments'
-    
-    def get_queryset(self):
-        return Department.objects.annotate(
-            employee_count=Count('employees', filter=Q(employees__status=Employee.Status.ACTIVE))
-        ).order_by('name')
-
-
-class DepartmentUpdateView(HRRequiredMixin, UpdateView):
-    """Update department."""
-    model = Department
-    fields = ['name', 'description']
-    template_name = 'hr/department_form.html'
-    success_url = reverse_lazy('hr:department_list')
-    
-    def get_form(self, form_class=None):
-        form = super().get_form(form_class)
-        form.fields['name'].widget.attrs.update({
-            'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500'
-        })
-        form.fields['description'].widget.attrs.update({
-            'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500',
-            'rows': 3
-        })
-        return form
-    
-    def form_valid(self, form):
-        messages.success(self.request, 'Department updated successfully!')
-        return super().form_valid(form)
-
-
-class DepartmentDeleteView(HRRequiredMixin, DeleteView):
-    """Delete department."""
-    model = Department
-    template_name = 'hr/department_confirm_delete.html'
-    success_url = reverse_lazy('hr:department_list')
-    
-    def delete(self, request, *args, **kwargs):
-        messages.success(request, 'Department deleted successfully!')
-        return super().delete(request, *args, **kwargs)
-    
-class DepartmentCreateView(HRRequiredMixin, CreateView):
-    """Create new department."""
-    model = Department
-    fields = ['name', 'description']
-    template_name = 'hr/department_form.html'
-    success_url = reverse_lazy('hr:department_list')  # Changed from dashboard
-    
-    # ... rest stays the same
-
-class LeaveRequestReviewView(HRRequiredMixin, UpdateView):
-    model = LeaveRequest
-    fields = ["status", "manager_notes"]
-    template_name = "hr/leave_review.html"
-
-    def form_valid(self, form):
-        obj = form.save(commit=False)
-        obj.reviewed_by = self.request.user.employee_profile
-        obj.reviewed_at = timezone.now()
-        obj.save()
-        return super().form_valid(form)
-
-    def get_success_url(self):
-        return reverse_lazy("hr:dashboard")
-    
-
-class LeaveListView(HRRequiredMixin, ListView):
-    model = LeaveRequest
-    template_name = "hr/leave_list.html"
-    context_object_name = "leave_requests"
-
-    def get_queryset(self):
-        return LeaveRequest.objects.select_related("employee").order_by("-start_date")
-
-class OnLeaveTodayView(HRRequiredMixin, ListView):
-    model = LeaveRequest
-    template_name = "hr/on_leave_today.html"
-    context_object_name = "leave_requests"
-
-    def get_queryset(self):
-        today = timezone.localdate()
-        return LeaveRequest.objects.filter(
-            status="approved",
-            start_date__lte=today,
-            end_date__gte=today
-        ).select_related("employee").order_by("employee__last_name")
-
-class HRSettingsView(HRRequiredMixin, TemplateView):
-    """HR Settings page."""
-    template_name = 'hr/settings.html'
-    
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['user'] = self.request.user
-        return context
-
-
-class LeaveRequestListView(HRRequiredMixin, ListView):
-    """List all leave requests for HR to manage."""
-    model = LeaveRequest
-    template_name = 'hr/leave_requests.html'
-    context_object_name = 'leave_requests'
-    paginate_by = 20
-    
-    def get_queryset(self):
-        queryset = LeaveRequest.objects.select_related('employee', 'employee__department').order_by('-submitted_at')
-        
-        # Filter by status
-        status = self.request.GET.get('status')
-        if status:
-            queryset = queryset.filter(status=status)
-        
-        # Filter by department
-        department = self.request.GET.get('department')
-        if department:
-            queryset = queryset.filter(employee__department_id=department)
-        
-        return queryset
-    
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['departments'] = Department.objects.all()
-        context['pending_count'] = LeaveRequest.objects.filter(status=LeaveRequest.Status.PENDING).count()
-        context['current_status'] = self.request.GET.get('status', '')
-        context['current_department'] = self.request.GET.get('department', '')
-        return context
-
-
-@login_required
-def approve_leave_request(request, pk):
-    """Approve a leave request."""
-    if not request.user.is_hr:
-        raise PermissionDenied
-    
-    leave_request = get_object_or_404(LeaveRequest, pk=pk)
-    
-    if request.method == 'POST':
-        leave_request.status = LeaveRequest.Status.APPROVED
-        leave_request.reviewed_by = request.user.employee_profile if hasattr(request.user, 'employee_profile') else None
-        leave_request.reviewed_at = timezone.now()
-        leave_request.manager_notes = request.POST.get('notes', '')
-        leave_request.save()
-        
-        # Deduct from leave balance
-        employee = leave_request.employee
-        days = leave_request.days_requested
-        
-        if leave_request.leave_type == 'annual':
-            employee.annual_leave_balance -= days
-        elif leave_request.leave_type == 'vacation':
-            employee.vacation_balance -= days
-        elif leave_request.leave_type == 'sick':
-            employee.sick_leave_balance -= days
-        employee.save()
-        
-        # Send notification
-        notify_leave_approved(leave_request)
-        
-        messages.success(request, f'Leave request approved for {employee.full_name}')
-    
-    # Check if request came from employee detail page
-    next_url = request.POST.get('next') or request.GET.get('next')
-    if next_url:
-        return redirect(next_url)
-    return redirect('hr:leave_requests')
-
-@login_required
-def reject_leave_request(request, pk):
-    """Reject a leave request."""
-    if not request.user.is_hr:
-        raise PermissionDenied
-    
-    leave_request = get_object_or_404(LeaveRequest, pk=pk)
-    
-    if request.method == 'POST':
-        leave_request.status = LeaveRequest.Status.REJECTED
-        leave_request.reviewed_by = request.user.employee_profile if hasattr(request.user, 'employee_profile') else None
-        leave_request.reviewed_at = timezone.now()
-        leave_request.manager_notes = request.POST.get('notes', '')
-        leave_request.save()
-        
-        # Send notification
-        notify_leave_rejected(leave_request)
-        
-        messages.success(request, f'Leave request rejected for {leave_request.employee.full_name}')
-    
-    next_url = request.POST.get('next') or request.GET.get('next')
-    if next_url:
-        return redirect(next_url)
-    return redirect('hr:leave_requests')
-
-
 
 class GenerateReportView(ManagerRequiredMixin, TemplateView):
     """Page for generating filtered reports."""
@@ -491,10 +184,13 @@ class GenerateReportView(ManagerRequiredMixin, TemplateView):
         return context
 
 
-
 @login_required
 def generate_report(request):
     """Generate report data based on parameters."""
+    # Allow managers, HR, and admins
+    if request.user.role not in ['manager', 'hr', 'admin']:
+        raise PermissionDenied
+    
     from datetime import datetime
     from django.db.models import Avg, Sum
     
@@ -557,26 +253,6 @@ def generate_report(request):
             'dept_active': dept_active,
         })
         return render(request, 'hr/reports/headcount_report.html', context)
-    
-    elif report_type == 'department':
-        departments = Department.objects.annotate(
-            employee_count=Count('employees', filter=Q(employees__status=Employee.Status.ACTIVE)),
-            avg_salary=Avg('employees__salary', filter=Q(employees__status=Employee.Status.ACTIVE)),
-            total_salary=Sum('employees__salary', filter=Q(employees__status=Employee.Status.ACTIVE))
-        ).order_by('-employee_count')
-    
-        dept_names = list(departments.values_list('name', flat=True))
-        dept_counts = [d.employee_count for d in departments]
-        dept_salaries = [float(d.avg_salary) if d.avg_salary else 0 for d in departments]
-    
-        context.update({
-            'department_list': departments,
-            'total_departments': departments.count(),
-            'dept_names': dept_names,
-            'dept_counts': dept_counts,
-            'dept_salaries': dept_salaries,
-        })
-        return render(request, 'hr/reports/department_report.html', context)
     
     elif report_type == 'leave':
         leaves = LeaveRequest.objects.all()
@@ -644,6 +320,7 @@ def generate_report(request):
     else:
         return render(request, 'hr/reports/no_report.html', context)
 
+
 class AttendanceCorrectionListView(HRRequiredMixin, ListView):
     """List all attendance correction requests."""
     model = AttendanceCorrection
@@ -672,7 +349,8 @@ class AttendanceCorrectionListView(HRRequiredMixin, ListView):
 @login_required
 def approve_correction(request, pk):
     """Approve an attendance correction."""
-    if not request.user.is_hr:
+    # Allow managers, HR, and admins
+    if request.user.role not in ['hr', 'admin']:
         raise PermissionDenied
     
     correction = get_object_or_404(AttendanceCorrection, pk=pk)
@@ -734,7 +412,8 @@ def approve_correction(request, pk):
 @login_required
 def reject_correction(request, pk):
     """Reject an attendance correction."""
-    if not request.user.is_hr:
+    # Allow managers, HR, and admins
+    if request.user.role not in ['hr', 'admin']:
         raise PermissionDenied
     
     correction = get_object_or_404(AttendanceCorrection, pk=pk)
@@ -755,6 +434,117 @@ def reject_correction(request, pk):
     if next_url:
         return redirect(next_url)
     return redirect('hr:attendance_corrections')
+
+
+class HRSettingsView(ManagerRequiredMixin, TemplateView):
+    """HR Settings page."""
+    template_name = 'hr/settings.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['user'] = self.request.user
+        return context
+
+
+# ============================================
+# HR ONLY ACCESS (HR, Admin)
+# ============================================
+
+class EmployeeListView(HRRequiredMixin, ListView):
+    """List all employees with search and filter."""
+    model = Employee
+    template_name = 'hr/employee_list.html'
+    context_object_name = 'employees'
+    paginate_by = 15
+    
+    def get_queryset(self):
+        queryset = Employee.objects.select_related('department', 'user')
+        
+        # Search
+        search = self.request.GET.get('search', '')
+        if search:
+            queryset = queryset.filter(
+                Q(first_name__icontains=search) |
+                Q(last_name__icontains=search) |
+                Q(employee_id__icontains=search) |
+                Q(user__email__icontains=search)
+            )
+        
+        # Filter by department
+        department = self.request.GET.get('department')
+        if department:
+            queryset = queryset.filter(department_id=department)
+        
+        # Filter by status
+        status = self.request.GET.get('status')
+        if status:
+            queryset = queryset.filter(status=status)
+
+        # Filter by role
+        role = self.request.GET.get('role')
+        if role:
+            queryset = queryset.filter(user__role=role)   
+        
+        return queryset
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['departments'] = Department.objects.all()
+        context['search_form'] = EmployeeSearchForm(self.request.GET)
+        return context
+
+
+class EmployeeCreateView(HRRequiredMixin, CreateView):
+    """Create a new employee."""
+    model = Employee
+    form_class = EmployeeForm
+    template_name = 'hr/employee_form.html'
+    success_url = reverse_lazy('hr:employee_list')
+    
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        
+        if hasattr(form, 'generated_password'):
+            employee = form.instance
+            password = form.generated_password
+            
+            # Send welcome email with credentials
+            send_welcome_email(employee, password)
+            
+            messages.success(
+                self.request, 
+                f'Employee "{employee.full_name}" created successfully! '
+                f'Login credentials - Email: {employee.user.email} | '
+                f'Temporary Password: {password} | '
+                f'A welcome email has been sent.'
+            )
+        else:
+            messages.success(self.request, f'Employee created successfully!')
+        
+        return response
+
+
+class EmployeeUpdateView(HRRequiredMixin, UpdateView):
+    """Update employee details."""
+    model = Employee
+    form_class = EmployeeForm
+    template_name = 'hr/employee_form.html'
+    success_url = reverse_lazy('hr:employee_list')
+    
+    def form_valid(self, form):
+        messages.success(self.request, 'Employee updated successfully!')
+        return super().form_valid(form)
+
+
+class EmployeeDeleteView(HRRequiredMixin, DeleteView):
+    """Delete employee (with confirmation)."""
+    model = Employee
+    template_name = 'hr/employee_confirm_delete.html'
+    success_url = reverse_lazy('hr:employee_list')
+    
+    def delete(self, request, *args, **kwargs):
+        messages.success(request, 'Employee deleted successfully!')
+        return super().delete(request, *args, **kwargs)
 
 
 class EmployeeDetailView(HRRequiredMixin, TemplateView):
@@ -809,8 +599,449 @@ class EmployeeDetailView(HRRequiredMixin, TemplateView):
             },
             'leave_balances': {
                 'annual': employee.annual_leave_balance,
+                'annual_pct': min(float(employee.annual_leave_balance) / 20 * 100, 100),
                 'vacation': employee.vacation_balance,
+                'vacation_pct': min(float(employee.vacation_balance) / 15 * 100, 100),
                 'sick': employee.sick_leave_balance,
+                'sick_pct': min(float(employee.sick_leave_balance) / 15 * 100, 100),
             },
         })
+        return context
+
+
+class DepartmentListView(HRRequiredMixin, ListView):
+    """List all departments."""
+    model = Department
+    template_name = 'hr/department_list.html'
+    context_object_name = 'departments'
+    
+    def get_queryset(self):
+        return Department.objects.annotate(
+            employee_count=Count('employees', filter=Q(employees__status=Employee.Status.ACTIVE))
+        ).order_by('name')
+
+
+class DepartmentCreateView(HRRequiredMixin, CreateView):
+    """Create new department."""
+    model = Department
+    fields = ['name', 'description']
+    template_name = 'hr/department_form.html'
+    success_url = reverse_lazy('hr:department_list')
+    
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        form.fields['name'].widget.attrs.update({
+            'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500'
+        })
+        form.fields['description'].widget.attrs.update({
+            'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500',
+            'rows': 3
+        })
+        return form
+    
+    def form_valid(self, form):
+        messages.success(self.request, 'Department created successfully!')
+        return super().form_valid(form)
+
+
+class DepartmentUpdateView(HRRequiredMixin, UpdateView):
+    """Update department."""
+    model = Department
+    fields = ['name', 'description']
+    template_name = 'hr/department_form.html'
+    success_url = reverse_lazy('hr:department_list')
+    
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        form.fields['name'].widget.attrs.update({
+            'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500'
+        })
+        form.fields['description'].widget.attrs.update({
+            'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500',
+            'rows': 3
+        })
+        return form
+    
+    def form_valid(self, form):
+        messages.success(self.request, 'Department updated successfully!')
+        return super().form_valid(form)
+
+
+class DepartmentDeleteView(HRRequiredMixin, DeleteView):
+    """Delete department."""
+    model = Department
+    template_name = 'hr/department_confirm_delete.html'
+    success_url = reverse_lazy('hr:department_list')
+    
+    def delete(self, request, *args, **kwargs):
+        messages.success(request, 'Department deleted successfully!')
+        return super().delete(request, *args, **kwargs)
+
+
+class LeaveRequestListView(ManagerRequiredMixin, ListView):
+    """List all leave requests for HR to manage."""
+    model = LeaveRequest
+    template_name = 'hr/leave_requests.html'
+    context_object_name = 'leave_requests'
+    paginate_by = 20
+    
+    def get_queryset(self):
+        queryset = LeaveRequest.objects.select_related('employee', 'employee__department').order_by('-submitted_at')
+        
+        # Filter by status
+        status = self.request.GET.get('status')
+        if status:
+            queryset = queryset.filter(status=status)
+        
+        # Filter by department
+        department = self.request.GET.get('department')
+        if department:
+            queryset = queryset.filter(employee__department_id=department)
+        
+        return queryset
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['departments'] = Department.objects.all()
+        context['pending_count'] = LeaveRequest.objects.filter(status=LeaveRequest.Status.PENDING).count()
+        context['current_status'] = self.request.GET.get('status', '')
+        context['current_department'] = self.request.GET.get('department', '')
+        return context
+
+
+class LeaveRequestReviewView(ManagerRequiredMixin, UpdateView):
+    model = LeaveRequest
+    fields = ["status", "manager_notes"]
+    template_name = "hr/leave_review.html"
+
+    def form_valid(self, form):
+        obj = form.save(commit=False)
+        obj.reviewed_by = self.request.user.employee_profile
+        obj.reviewed_at = timezone.now()
+        obj.save()
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse_lazy("hr:dashboard")
+
+
+class LeaveListView(HRRequiredMixin, ListView):
+    model = LeaveRequest
+    template_name = "hr/leave_list.html"
+    context_object_name = "leave_requests"
+
+    def get_queryset(self):
+        return LeaveRequest.objects.select_related("employee").order_by("-start_date")
+
+
+class OnLeaveTodayView(HRRequiredMixin, ListView):
+    model = LeaveRequest
+    template_name = "hr/on_leave_today.html"
+    context_object_name = "leave_requests"
+
+    def get_queryset(self):
+        today = timezone.localdate()
+        return LeaveRequest.objects.filter(
+            status="approved",
+            start_date__lte=today,
+            end_date__gte=today
+        ).select_related("employee").order_by("employee__last_name")
+
+
+@login_required
+def approve_leave_request(request, pk):
+    """Approve a leave request."""
+    # HR and Admin only
+    if request.user.role not in ['manager','hr', 'admin']:
+        raise PermissionDenied
+    
+    leave_request = get_object_or_404(LeaveRequest, pk=pk)
+    
+    if request.method == 'POST':
+        leave_request.status = LeaveRequest.Status.APPROVED
+        leave_request.reviewed_by = request.user.employee_profile if hasattr(request.user, 'employee_profile') else None
+        leave_request.reviewed_at = timezone.now()
+        leave_request.manager_notes = request.POST.get('notes', '')
+        leave_request.save()
+        
+        # Deduct from leave balance
+        employee = leave_request.employee
+        days = leave_request.days_requested
+        
+        if leave_request.leave_type == 'annual':
+            employee.annual_leave_balance -= days
+        elif leave_request.leave_type == 'vacation':
+            employee.vacation_balance -= days
+        elif leave_request.leave_type == 'sick':
+            employee.sick_leave_balance -= days
+        employee.save()
+        
+        # Send notification
+        notify_leave_approved(leave_request)
+        
+        messages.success(request, f'Leave request approved for {employee.full_name}')
+    
+    # Check if request came from employee detail page
+    next_url = request.POST.get('next') or request.GET.get('next')
+    if next_url:
+        return redirect(next_url)
+    return redirect('hr:leave_requests')
+
+
+@login_required
+def reject_leave_request(request, pk):
+    """Reject a leave request."""
+    # HR and Admin only
+    if request.user.role not in ['manager', 'hr', 'admin']:
+        raise PermissionDenied
+    
+    leave_request = get_object_or_404(LeaveRequest, pk=pk)
+    
+    if request.method == 'POST':
+        leave_request.status = LeaveRequest.Status.REJECTED
+        leave_request.reviewed_by = request.user.employee_profile if hasattr(request.user, 'employee_profile') else None
+        leave_request.reviewed_at = timezone.now()
+        leave_request.manager_notes = request.POST.get('notes', '')
+        leave_request.save()
+        
+        # Send notification
+        notify_leave_rejected(leave_request)
+        
+        messages.success(request, f'Leave request rejected for {leave_request.employee.full_name}')
+    
+    next_url = request.POST.get('next') or request.GET.get('next')
+    if next_url:
+        return redirect(next_url)
+    return redirect('hr:leave_requests')
+
+
+
+class AuditLogView(HRRequiredMixin, TemplateView):
+    """View system audit log."""
+    template_name = 'hr/audit_log.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Get employee history records
+        employee_history = Employee.history.select_related('history_user').order_by('-history_date')[:100]
+        
+        # Format the history entries
+        audit_entries = []
+        for record in employee_history:
+            audit_entries.append({
+                'timestamp': record.history_date,
+                'user': record.history_user.email if record.history_user else 'System',
+                'action': record.get_history_type_display(),
+                'model': 'Employee',
+                'object': f"{record.first_name} {record.last_name}",
+                'object_id': record.employee_id,
+            })
+        
+        context['audit_entries'] = audit_entries
+        return context
+
+
+@login_required
+def backup_database(request):
+    """Create a JSON backup of all data."""
+    if request.user.role not in ['hr', 'admin']:
+        raise PermissionDenied
+    
+    if request.method == 'POST':
+        # Gather all data
+        backup_data = {
+            'backup_date': datetime.now().isoformat(),
+            'backup_by': request.user.email,
+            'departments': [],
+            'employees': [],
+            'leave_requests': [],
+            'attendance': [],
+        }
+        
+        # Export departments
+        for dept in Department.objects.all():
+            backup_data['departments'].append({
+                'id': dept.id,
+                'name': dept.name,
+                'description': dept.description or '',
+            })
+        
+        # Export employees
+        for emp in Employee.objects.select_related('user', 'department', 'manager'):
+            backup_data['employees'].append({
+                'id': emp.id,
+                'employee_id': emp.employee_id,
+                'first_name': emp.first_name,
+                'last_name': emp.last_name,
+                'email': emp.user.email if emp.user else '',
+                'role': emp.user.role if emp.user else '',
+                'department': emp.department.name if emp.department else '',
+                'job_title': emp.job_title,
+                'status': emp.status,
+                'start_date': emp.start_date.isoformat() if emp.start_date else '',
+                'phone': emp.phone or '',
+                'address': emp.address or '',
+                'salary': str(emp.salary) if emp.salary else '',
+                'annual_leave_balance': str(emp.annual_leave_balance),
+                'vacation_balance': str(emp.vacation_balance),
+                'sick_leave_balance': str(emp.sick_leave_balance),
+            })
+        
+        # Export leave requests
+        for leave in LeaveRequest.objects.select_related('employee'):
+            backup_data['leave_requests'].append({
+                'id': leave.id,
+                'employee': leave.employee.employee_id,
+                'leave_type': leave.leave_type,
+                'start_date': leave.start_date.isoformat(),
+                'end_date': leave.end_date.isoformat(),
+                'status': leave.status,
+                'reason': leave.reason or '',
+                'submitted_at': leave.submitted_at.isoformat() if leave.submitted_at else '',
+            })
+        
+        # Export attendance
+        for att in Attendance.objects.select_related('employee')[:1000]:  # Limit to last 1000 records
+            backup_data['attendance'].append({
+                'id': att.id,
+                'employee': att.employee.employee_id,
+                'date': att.date.isoformat(),
+                'status': att.status,
+                'time_in': att.time_in.isoformat() if att.time_in else '',
+                'time_out': att.time_out.isoformat() if att.time_out else '',
+                'hours_worked': str(att.hours_worked) if att.hours_worked else '',
+            })
+        
+        # Create JSON response
+        response = HttpResponse(
+            json.dumps(backup_data, indent=2),
+            content_type='application/json'
+        )
+        filename = f"ethos_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        
+        messages.success(request, 'Database backup created successfully!')
+        return response
+    
+    return redirect('hr:settings')
+
+
+@login_required
+def export_employees_csv(request):
+    """Export all employees as CSV."""
+    if request.user.role not in ['hr', 'admin']:
+        raise PermissionDenied
+    
+    response = HttpResponse(content_type='text/csv')
+    filename = f"employees_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    
+    writer = csv.writer(response)
+    writer.writerow([
+        'Employee ID', 'First Name', 'Last Name', 'Email', 'Role',
+        'Department', 'Job Title', 'Status', 'Start Date', 'Phone',
+        'Salary', 'Annual Leave', 'Vacation', 'Sick Leave'
+    ])
+    
+    for emp in Employee.objects.select_related('user', 'department'):
+        writer.writerow([
+            emp.employee_id,
+            emp.first_name,
+            emp.last_name,
+            emp.user.email if emp.user else '',
+            emp.user.role if emp.user else '',
+            emp.department.name if emp.department else '',
+            emp.job_title,
+            emp.status,
+            emp.start_date,
+            emp.phone or '',
+            emp.salary or '',
+            emp.annual_leave_balance,
+            emp.vacation_balance,
+            emp.sick_leave_balance,
+        ])
+    
+    return response
+
+
+class MyLeaveRequestView(ManagerRequiredMixin, TemplateView):
+    """Allow HR/Manager to submit their own leave request."""
+    template_name = 'hr/my_leave_request.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        employee = self.request.user.employee_profile
+        context['employee'] = employee
+        context['leave_balances'] = {
+            'annual': employee.annual_leave_balance,
+            'vacation': employee.vacation_balance,
+            'sick': employee.sick_leave_balance,
+        }
+        return context
+    
+    def post(self, request, *args, **kwargs):
+        employee = request.user.employee_profile
+        
+        leave_type = request.POST.get('leave_type')
+        start_date = request.POST.get('start_date')
+        end_date = request.POST.get('end_date')
+        reason = request.POST.get('reason', '')
+        
+        from datetime import datetime
+        start = datetime.strptime(start_date, '%Y-%m-%d').date()
+        end = datetime.strptime(end_date, '%Y-%m-%d').date()
+        
+        # Calculate business days
+        days = 0
+        current = start
+        while current <= end:
+            if current.weekday() < 5:
+                days += 1
+            current += timedelta(days=1)
+        
+        # Check balance
+        if leave_type == 'annual' and days > employee.annual_leave_balance:
+            messages.error(request, 'Insufficient annual leave balance.')
+            return redirect('hr:my_leave_request')
+        elif leave_type == 'vacation' and days > employee.vacation_balance:
+            messages.error(request, 'Insufficient vacation balance.')
+            return redirect('hr:my_leave_request')
+        elif leave_type == 'sick' and days > employee.sick_leave_balance:
+            messages.error(request, 'Insufficient sick leave balance.')
+            return redirect('hr:my_leave_request')
+        
+        # Create leave request
+        LeaveRequest.objects.create(
+            employee=employee,
+            leave_type=leave_type,
+            start_date=start,
+            end_date=end,
+            reason=reason,
+        )
+        
+        messages.success(request, f'Leave request submitted successfully! ({days} day{"s" if days != 1 else ""})')
+        return redirect('hr:my_leave_history')
+
+
+class MyLeaveHistoryView(ManagerRequiredMixin, ListView):
+    """View HR/Manager's own leave history."""
+    template_name = 'hr/my_leave_history.html'
+    context_object_name = 'leave_requests'
+    paginate_by = 10
+    
+    def get_queryset(self):
+        return LeaveRequest.objects.filter(
+            employee=self.request.user.employee_profile
+        ).order_by('-submitted_at')
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        employee = self.request.user.employee_profile
+        context['employee'] = employee
+        context['leave_balances'] = {
+            'annual': employee.annual_leave_balance,
+            'vacation': employee.vacation_balance,
+            'sick': employee.sick_leave_balance,
+        }
         return context

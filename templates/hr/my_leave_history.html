@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}My Leave History - Ethos HRMS{% endblock %}
+
+{% block navigation %}
+{% include "components/navbar_hr.html" %}
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="flex items-center justify-between mb-6">
+        <h2 class="text-2xl font-bold text-gray-800">My Leave History</h2>
+        <div class="flex gap-3">
+            <a href="{% url 'hr:my_leave_request' %}" 
+               class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium">
+                + New Request
+            </a>
+            <a href="{% url 'hr:settings' %}" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-sm font-medium">
+                ← Back to Settings
+            </a>
+        </div>
+    </div>
+    
+    <!-- Leave Balances -->
+    <div class="grid grid-cols-3 gap-4 mb-6">
+        <div class="bg-white rounded-xl shadow p-4 text-center border-l-4 border-green-500">
+            <p class="text-2xl font-bold text-gray-800">{{ leave_balances.annual }}</p>
+            <p class="text-sm text-gray-500">Annual Leave</p>
+        </div>
+        <div class="bg-white rounded-xl shadow p-4 text-center border-l-4 border-blue-500">
+            <p class="text-2xl font-bold text-gray-800">{{ leave_balances.vacation }}</p>
+            <p class="text-sm text-gray-500">Vacation</p>
+        </div>
+        <div class="bg-white rounded-xl shadow p-4 text-center border-l-4 border-yellow-500">
+            <p class="text-2xl font-bold text-gray-800">{{ leave_balances.sick }}</p>
+            <p class="text-sm text-gray-500">Sick Leave</p>
+        </div>
+    </div>
+    
+    <!-- Leave History Table -->
+    <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Dates</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Days</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Submitted</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for leave in leave_requests %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">
+                        {{ leave.get_leave_type_display }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        {{ leave.start_date|date:"M d" }} - {{ leave.end_date|date:"M d, Y" }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        {{ leave.days_requested }} day{{ leave.days_requested|pluralize }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 py-1 text-xs rounded-full
+                            {% if leave.status == 'pending' %}bg-yellow-100 text-yellow-800
+                            {% elif leave.status == 'approved' %}bg-green-100 text-green-800
+                            {% elif leave.status == 'rejected' %}bg-red-100 text-red-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {{ leave.get_status_display }}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {{ leave.submitted_at|date:"M d, Y" }}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="px-6 py-12 text-center text-gray-500">
+                        No leave requests found
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <div class="mt-4 flex justify-center">
+        <nav class="flex gap-2">
+            {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">Previous</a>
+            {% endif %}
+            <span class="px-3 py-1 bg-green-600 text-white rounded">{{ page_obj.number }}</span>
+            {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">Next</a>
+            {% endif %}
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

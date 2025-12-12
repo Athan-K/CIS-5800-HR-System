@@ -177,34 +177,44 @@
             <!-- Sidebar -->
             <div class="space-y-6">
                 <!-- Leave Balances -->
-                <div class="bg-white rounded-xl shadow p-6">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Leave Balances</h3>
-                    <div class="space-y-3">
-                        <div class="flex justify-between items-center">
-                            <span class="text-gray-600">Annual Leave</span>
-                            <span class="font-bold text-green-600">{{ leave_balances.annual }} days</span>
-                        </div>
-                        <div class="w-full bg-gray-200 rounded-full h-2">
-                            <div class="bg-green-500 h-2 rounded-full" style="width: {% widthratio leave_balances.annual 15 100 %}%"></div>
-                        </div>
-                        
-                        <div class="flex justify-between items-center mt-4">
-                            <span class="text-gray-600">Vacation</span>
-                            <span class="font-bold text-blue-600">{{ leave_balances.vacation }} days</span>
-                        </div>
-                        <div class="w-full bg-gray-200 rounded-full h-2">
-                            <div class="bg-blue-500 h-2 rounded-full" style="width: {% widthratio leave_balances.vacation 10 100 %}%"></div>
-                        </div>
-                        
-                        <div class="flex justify-between items-center mt-4">
-                            <span class="text-gray-600">Sick Leave</span>
-                            <span class="font-bold text-purple-600">{{ leave_balances.sick }} days</span>
-                        </div>
-                        <div class="w-full bg-gray-200 rounded-full h-2">
-                            <div class="bg-purple-500 h-2 rounded-full" style="width: {% widthratio leave_balances.sick 10 100 %}%"></div>
-                        </div>
-                    </div>
-                </div>
+<div class="bg-white rounded-xl shadow p-6">
+    <h4 class="text-lg font-semibold text-gray-800 mb-4">Leave Balances</h4>
+    
+    <div class="space-y-4">
+        <!-- Annual Leave -->
+        <div>
+            <div class="flex justify-between mb-1">
+                <span class="text-sm text-gray-600">Annual Leave</span>
+                <span class="text-sm font-semibold text-green-600">{{ leave_balances.annual }} days</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2.5">
+                <div class="bg-green-500 h-2.5 rounded-full" style="width: {{ leave_balances.annual_pct }}%"></div>
+            </div>
+        </div>
+        
+        <!-- Vacation -->
+        <div>
+            <div class="flex justify-between mb-1">
+                <span class="text-sm text-gray-600">Vacation</span>
+                <span class="text-sm font-semibold text-blue-600">{{ leave_balances.vacation }} days</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2.5">
+                <div class="bg-blue-500 h-2.5 rounded-full" style="width: {{ leave_balances.vacation_pct }}%"></div>
+            </div>
+        </div>
+        
+        <!-- Sick Leave -->
+        <div>
+            <div class="flex justify-between mb-1">
+                <span class="text-sm text-gray-600">Sick Leave</span>
+                <span class="text-sm font-semibold text-purple-600">{{ leave_balances.sick }} days</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2.5">
+                <div class="bg-purple-500 h-2.5 rounded-full" style="width: {{ leave_balances.sick_pct }}%"></div>
+            </div>
+        </div>
+    </div>
+</div>
                 
                 <!-- Attendance Summary -->
                 <div class="bg-white rounded-xl shadow p-6">
