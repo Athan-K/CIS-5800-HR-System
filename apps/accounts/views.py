@@ -9,7 +9,11 @@ from io import BytesIO
 import base64
 from django.contrib.auth import logout
 
-
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes, force_str
+from apps.employees.services import send_email_notification, get_base_url
+from .models import User
 
 @login_required
 def dashboard_redirect(request):
@@ -168,3 +172,74 @@ def generate_qr_code(data):
     
     img_str = base64.b64encode(buffer.getvalue()).decode()
     return f"data:image/png;base64,{img_str}"
+
+def custom_password_reset(request):
+    """Custom password reset that uses SendGrid HTTP API."""
+    if request.method == 'POST':
+        email = request.POST.get('email')
+        try:
+            user = User.objects.get(email=email)
+            
+            # Generate reset token
+            token = default_token_generator.make_token(user)
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+            
+            # Build reset URL
+            base_url = get_base_url()
+            reset_url = f"{base_url}/auth/password-reset/confirm/{uid}/{token}/"
+            
+            # Send email using HTTP API
+            send_email_notification(
+                to_email=email,
+                subject='Password Reset - Ethos HRMS',
+                template_name='emails/password_reset.html',
+                context={
+                    'user': user,
+                    'reset_url': reset_url,
+                    'base_url': base_url
+                }
+            )
+            
+            return redirect('custom_password_reset_done')
+            
+        except User.DoesNotExist:
+            # Don't reveal if email exists - still show success
+            return redirect('custom_password_reset_done')
+    
+    return render(request, 'account/password_reset.html')
+
+
+def custom_password_reset_done(request):
+    """Password reset email sent confirmation."""
+    return render(request, 'account/password_reset_done.html')
+
+
+def custom_password_reset_confirm(request, uidb64, token):
+    """Confirm password reset with token."""
+    try:
+        uid = force_str(urlsafe_base64_decode(uidb64))
+        user = User.objects.get(pk=uid)
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        user = None
+    
+    if user is not None and default_token_generator.check_token(user, token):
+        if request.method == 'POST':
+            password1 = request.POST.get('password1')
+            password2 = request.POST.get('password2')
+            
+            if password1 and password1 == password2:
+                user.set_password(password1)
+                user.save()
+                messages.success(request, 'Your password has been reset successfully!')
+                return redirect('custom_password_reset_complete')
+            else:
+                messages.error(request, 'Passwords do not match.')
+        
+        return render(request, 'account/password_reset_from_key.html', {'validlink': True})
+    else:
+        return render(request, 'account/password_reset_from_key.html', {'validlink': False})
+
+
+def custom_password_reset_complete(request):
+    """Password reset complete."""
+    return render(request, 'account/password_reset_from_key_done.html')
