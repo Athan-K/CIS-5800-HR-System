@@ -100,9 +100,15 @@ def profile_view(request):
     else:
         form = ProfileUpdateForm(instance=employee)
     
+    # Get leave requests and attendance for the tabs
+    leave_requests = employee.leave_requests.all().order_by('-submitted_at')[:20]
+    attendance_records = employee.attendance_records.all().order_by('-date')[:30]
+    
     return render(request, 'employees/profile.html', {
         'employee': employee,
         'form': form,
+        'leave_requests': leave_requests,
+        'attendance_records': attendance_records,
     })
 
 

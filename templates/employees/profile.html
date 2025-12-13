@@ -7,149 +7,322 @@
 {% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto">
-    <h2 class="text-2xl font-bold text-gray-800 mb-6">My Profile</h2>
-    
+<div class="max-w-7xl mx-auto">
     <!-- Profile Header -->
-    <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
-        <div class="flex items-center gap-6">
-            <div class="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center">
-                <span class="text-3xl font-bold text-green-600">
+    <div class="bg-white rounded-xl shadow-lg overflow-hidden mb-6">
+        <div class="bg-gradient-to-r from-green-600 to-green-700 px-8 py-6">
+            <div class="flex items-center gap-6">
+                <!-- Avatar -->
+                <div class="w-24 h-24 bg-white rounded-full flex items-center justify-center text-3xl font-bold text-green-600 shadow-lg">
                     {{ employee.first_name.0 }}{{ employee.last_name.0 }}
-                </span>
+                </div>
+                
+                <!-- Basic Info -->
+                <div class="flex-1 text-white">
+                    <h1 class="text-3xl font-bold">{{ employee.full_name }}</h1>
+                    <p class="text-green-100 text-lg">{{ employee.job_title }}</p>
+                    <div class="flex items-center gap-4 mt-2 text-green-100 text-sm">
+                        <span>{{ employee.department.name|default:"No Department" }}</span>
+                        <span>•</span>
+                        <span>{{ employee.employee_id }}</span>
+                        <span>•</span>
+                        <span class="px-2 py-0.5 rounded-full text-xs font-medium
+                            {% if employee.status == 'active' %}bg-green-500 text-white
+                            {% elif employee.status == 'on_leave' %}bg-yellow-500 text-white
+                            {% else %}bg-red-500 text-white{% endif %}">
+                            {{ employee.get_status_display }}
+                        </span>
+                    </div>
+                </div>
             </div>
-            <div>
-                <h3 class="text-2xl font-bold text-gray-800">{{ employee.full_name }}</h3>
-                <p class="text-gray-600">{{ employee.job_title }}</p>
-                <p class="text-sm text-gray-500">{{ employee.department.name|default:"No Department" }}</p>
-                <span class="inline-block mt-2 px-3 py-1 rounded-full text-sm font-medium
-                    {% if employee.status == 'active' %}bg-green-100 text-green-700
-                    {% elif employee.status == 'on_leave' %}bg-yellow-100 text-yellow-700
-                    {% else %}bg-gray-100 text-gray-700{% endif %}">
-                    {{ employee.get_status_display }}
-                </span>
+        </div>
+        
+        <!-- Tab Navigation -->
+        <div class="border-b border-gray-200">
+            <nav class="flex px-8" id="profile-tabs">
+                <button onclick="showTab('overview')" 
+                        class="tab-btn active px-4 py-4 text-sm font-medium border-b-2 border-green-500 text-green-600"
+                        data-tab="overview">
+                    Overview
+                </button>
+                <button onclick="showTab('leave')" 
+                        class="tab-btn px-4 py-4 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700"
+                        data-tab="leave">
+                    Leave History
+                </button>
+                <button onclick="showTab('attendance')" 
+                        class="tab-btn px-4 py-4 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700"
+                        data-tab="attendance">
+                    Attendance
+                </button>
+            </nav>
+        </div>
+    </div>
+    
+    <!-- Overview Tab -->
+    <div id="tab-overview" class="tab-content">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Personal Information -->
+            <div class="lg:col-span-2 space-y-6">
+                <div class="bg-white rounded-xl shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Personal Information</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-xs text-gray-500 uppercase tracking-wide">Full Name</label>
+                            <p class="text-gray-800 font-medium">{{ employee.full_name }}</p>
+                        </div>
+                        <div>
+                            <label class="text-xs text-gray-500 uppercase tracking-wide">Email</label>
+                            <p class="text-gray-800">{{ employee.user.email }}</p>
+                        </div>
+                        <div>
+                            <label class="text-xs text-gray-500 uppercase tracking-wide">Phone</label>
+                            <p class="text-gray-800">{{ employee.phone|default:"Not provided" }}</p>
+                        </div>
+                        <div>
+                            <label class="text-xs text-gray-500 uppercase tracking-wide">Date of Birth</label>
+                            <p class="text-gray-800">{{ employee.date_of_birth|date:"M d, Y"|default:"Not provided" }}</p>
+                        </div>
+                        <div class="col-span-2">
+                            <label class="text-xs text-gray-500 uppercase tracking-wide">Address</label>
+                            <p class="text-gray-800">{{ employee.address|default:"Not provided" }}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-xl shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Employment Details</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-xs text-gray-500 uppercase tracking-wide">Employee ID</label>
+                            <p class="text-gray-800 font-medium">{{ employee.employee_id }}</p>
+                        </div>
+                        <div>
+                            <label class="text-xs text-gray-500 uppercase tracking-wide">Department</label>
+                            <p class="text-gray-800">{{ employee.department.name|default:"Not assigned" }}</p>
+                        </div>
+                        <div>
+                            <label class="text-xs text-gray-500 uppercase tracking-wide">Job Title</label>
+                            <p class="text-gray-800">{{ employee.job_title }}</p>
+                        </div>
+                        <div>
+                            <label class="text-xs text-gray-500 uppercase tracking-wide">Manager</label>
+                            <p class="text-gray-800">{{ employee.manager.full_name|default:"None" }}</p>
+                        </div>
+                        <div>
+                            <label class="text-xs text-gray-500 uppercase tracking-wide">Start Date</label>
+                            <p class="text-gray-800">{{ employee.start_date|date:"M d, Y" }}</p>
+                        </div>
+                        <div>
+                            <label class="text-xs text-gray-500 uppercase tracking-wide">Status</label>
+                            <p class="text-gray-800">{{ employee.get_status_display }}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-xl shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Emergency Contact</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-xs text-gray-500 uppercase tracking-wide">Contact Name</label>
+                            <p class="text-gray-800">{{ employee.emergency_contact|default:"Not provided" }}</p>
+                        </div>
+                        <div>
+                            <label class="text-xs text-gray-500 uppercase tracking-wide">Contact Phone</label>
+                            <p class="text-gray-800">{{ employee.emergency_phone|default:"Not provided" }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Sidebar -->
+            <div class="space-y-6">
+                <!-- Leave Balances -->
+                <div class="bg-white rounded-xl shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Leave Balances</h3>
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                            <div>
+                                <p class="text-sm text-gray-600">Annual Leave</p>
+                                <p class="text-2xl font-bold text-green-600">{{ employee.annual_leave_balance }}</p>
+                            </div>
+                            <div class="text-green-600">
+                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                            <div>
+                                <p class="text-sm text-gray-600">Vacation</p>
+                                <p class="text-2xl font-bold text-blue-600">{{ employee.vacation_balance }}</p>
+                            </div>
+                            <div class="text-blue-600">
+                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+                            <div>
+                                <p class="text-sm text-gray-600">Sick Leave</p>
+                                <p class="text-2xl font-bold text-yellow-600">{{ employee.sick_leave_balance }}</p>
+                            </div>
+                            <div class="text-yellow-600">
+                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                    <a href="{% url 'employees:leave_request' %}" 
+                       class="mt-4 block w-full px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-center rounded-lg text-sm font-medium">
+                        Request Leave
+                    </a>
+                </div>
+                
+                <!-- Quick Info -->
+                <div class="bg-white rounded-xl shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Quick Info</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500">Role</span>
+                            <span class="text-gray-800 font-medium">{{ employee.user.get_role_display }}</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500">Department</span>
+                            <span class="text-gray-800 font-medium">{{ employee.department.name|default:"—" }}</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500">Manager</span>
+                            <span class="text-gray-800 font-medium">{{ employee.manager.full_name|default:"—" }}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Info Message -->
+                <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div class="flex items-center gap-3">
+                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <p class="text-sm text-blue-800">
+                            To update your profile, please contact HR.
+                        </p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
     
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <!-- Personal Information -->
-        <div class="bg-white rounded-xl shadow-lg p-6">
-            <h3 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">Personal Information</h3>
-            
-            <div class="space-y-4">
-                <div>
-                    <p class="text-sm text-gray-500">Employee ID</p>
-                    <p class="text-gray-800 font-medium">{{ employee.employee_id }}</p>
-                </div>
-                <div>
-                    <p class="text-sm text-gray-500">Email</p>
-                    <p class="text-gray-800 font-medium">{{ employee.user.email }}</p>
-                </div>
-                <div>
-                    <p class="text-sm text-gray-500">Phone</p>
-                    <p class="text-gray-800 font-medium">{{ employee.phone|default:"Not provided" }}</p>
-                </div>
-                <div>
-                    <p class="text-sm text-gray-500">Date of Birth</p>
-                    <p class="text-gray-800 font-medium">{{ employee.date_of_birth|date:"F d, Y"|default:"Not provided" }}</p>
-                </div>
-                <div>
-                    <p class="text-sm text-gray-500">Address</p>
-                    <p class="text-gray-800 font-medium">{{ employee.address|default:"Not provided"|linebreaksbr }}</p>
-                </div>
+    <!-- Leave History Tab -->
+    <div id="tab-leave" class="tab-content hidden">
+        <div class="bg-white rounded-xl shadow overflow-hidden">
+            <div class="p-6 border-b">
+                <h3 class="text-lg font-semibold text-gray-800">Leave Request History</h3>
             </div>
+            <table class="w-full">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Dates</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Days</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Reason</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Submitted</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    {% for leave in leave_requests %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 text-sm font-medium text-gray-800">{{ leave.get_leave_type_display }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-600">{{ leave.start_date|date:"M d" }} - {{ leave.end_date|date:"M d, Y" }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-600">{{ leave.days_requested }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-600 max-w-xs truncate">{{ leave.reason|default:"—"|truncatewords:8 }}</td>
+                        <td class="px-6 py-4">
+                            <span class="px-2 py-1 rounded-full text-xs font-medium
+                                {% if leave.status == 'pending' %}bg-yellow-100 text-yellow-800
+                                {% elif leave.status == 'approved' %}bg-green-100 text-green-800
+                                {% else %}bg-red-100 text-red-800{% endif %}">
+                                {{ leave.status|title }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-500">{{ leave.submitted_at|date:"M d, Y" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-8 text-center text-gray-500">No leave requests found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
-        
-        <!-- Employment Details -->
-        <div class="bg-white rounded-xl shadow-lg p-6">
-            <h3 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">Employment Details</h3>
-            
-            <div class="space-y-4">
-                <div>
-                    <p class="text-sm text-gray-500">Department</p>
-                    <p class="text-gray-800 font-medium">{{ employee.department.name|default:"Not assigned" }}</p>
-                </div>
-                <div>
-                    <p class="text-sm text-gray-500">Job Title</p>
-                    <p class="text-gray-800 font-medium">{{ employee.job_title }}</p>
-                </div>
-                <div>
-                    <p class="text-sm text-gray-500">Manager</p>
-                    <p class="text-gray-800 font-medium">{{ employee.manager.full_name|default:"None" }}</p>
-                </div>
-                <div>
-                    <p class="text-sm text-gray-500">Start Date</p>
-                    <p class="text-gray-800 font-medium">{{ employee.start_date|date:"F d, Y" }}</p>
-                </div>
-                <div>
-                    <p class="text-sm text-gray-500">Status</p>
-                    <p class="text-gray-800 font-medium">{{ employee.get_status_display }}</p>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Emergency Contact -->
-        <div class="bg-white rounded-xl shadow-lg p-6">
-            <h3 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">Emergency Contact</h3>
-            
-            <div class="space-y-4">
-                <div>
-                    <p class="text-sm text-gray-500">Contact Name</p>
-                    <p class="text-gray-800 font-medium">{{ employee.emergency_contact|default:"Not provided" }}</p>
-                </div>
-                <div>
-                    <p class="text-sm text-gray-500">Contact Phone</p>
-                    <p class="text-gray-800 font-medium">{{ employee.emergency_phone|default:"Not provided" }}</p>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Leave Balances -->
-<div class="bg-white rounded-xl shadow-lg p-6">
-    <h3 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">Leave Balances</h3>
+    </div>
     
-    <div class="space-y-4">
-        <div>
-            <div class="flex justify-between mb-1">
-                <p class="text-sm text-gray-500">Annual Leave</p>
-                <p class="text-sm font-medium text-gray-800">{{ employee.annual_leave_balance }} days</p>
+    <!-- Attendance Tab -->
+    <div id="tab-attendance" class="tab-content hidden">
+        <div class="bg-white rounded-xl shadow overflow-hidden">
+            <div class="p-6 border-b">
+                <h3 class="text-lg font-semibold text-gray-800">Recent Attendance</h3>
             </div>
-            <div class="w-full bg-gray-200 rounded-full h-2">
-                <div class="bg-green-500 h-2 rounded-full" style="width: calc({{ employee.annual_leave_balance }} / 20 * 100%); max-width: 100%;"></div>
-            </div>
-        </div>
-        <div>
-            <div class="flex justify-between mb-1">
-                <p class="text-sm text-gray-500">Vacation</p>
-                <p class="text-sm font-medium text-gray-800">{{ employee.vacation_balance }} days</p>
-            </div>
-            <div class="w-full bg-gray-200 rounded-full h-2">
-                <div class="bg-blue-500 h-2 rounded-full" style="width: calc({{ employee.vacation_balance }} / 15 * 100%); max-width: 100%;"></div>
-            </div>
-        </div>
-        <div>
-            <div class="flex justify-between mb-1">
-                <p class="text-sm text-gray-500">Sick Leave</p>
-                <p class="text-sm font-medium text-gray-800">{{ employee.sick_leave_balance }} days</p>
-            </div>
-            <div class="w-full bg-gray-200 rounded-full h-2">
-                <div class="bg-yellow-500 h-2 rounded-full" style="width: calc({{ employee.sick_leave_balance }} / 15 * 100%); max-width: 100%;"></div>
-            </div>
+            <table class="w-full">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Check In</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Check Out</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Hours</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    {% for record in attendance_records %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 text-sm font-medium text-gray-800">{{ record.date|date:"M d, Y" }}</td>
+                        <td class="px-6 py-4">
+                            <span class="px-2 py-1 rounded-full text-xs font-medium
+                                {% if record.status == 'present' %}bg-green-100 text-green-800
+                                {% elif record.status == 'late' %}bg-yellow-100 text-yellow-800
+                                {% elif record.status == 'absent' %}bg-red-100 text-red-800
+                                {% elif record.status == 'on_leave' %}bg-blue-100 text-blue-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ record.get_status_display }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-600">{{ record.check_in|time:"g:i A"|default:"—" }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-600">{{ record.check_out|time:"g:i A"|default:"—" }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-600">{{ record.hours_worked|floatformat:1|default:"—" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-8 text-center text-gray-500">No attendance records found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
+
+<script>
+function showTab(tabName) {
+    // Hide all tab contents
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.add('hidden');
+    });
     
-    <!-- Info Message -->
-    <div class="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-        <div class="flex items-center gap-3">
-            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-            </svg>
-            <p class="text-sm text-blue-800">
-                To update your profile information, please contact HR.
-            </p>
-        </div>
-    </div>
-</div>
+    // Remove active state from all buttons
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('border-green-500', 'text-green-600');
+        btn.classList.add('border-transparent', 'text-gray-500');
+    });
+    
+    // Show selected tab
+    document.getElementById('tab-' + tabName).classList.remove('hidden');
+    
+    // Add active state to clicked button
+    document.querySelector('[data-tab="' + tabName + '"]').classList.add('border-green-500', 'text-green-600');
+    document.querySelector('[data-tab="' + tabName + '"]').classList.remove('border-transparent', 'text-gray-500');
+}
+</script>
 {% endblock %}
