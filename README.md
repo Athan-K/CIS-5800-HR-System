@@ -34,7 +34,7 @@ Ethos HRMS is a full-featured human resource management system designed to strea
 
 ### Security Features
 - **Two-Factor Authentication (2FA)** - Optional TOTP-based 2FA using authenticator apps
-- **Role-Based Access Control** - Admin, HR, Manager, and Employee roles
+- **Role-Based Access Control** - HR, Manager, and Employee roles
 - **Terminated Employee Blocking** - Automatic access revocation for terminated employees
 
 ### Email Notifications
