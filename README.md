@@ -116,17 +116,6 @@ Ethos HRMS is a full-featured human resource management system designed to strea
    - Default admin login: `admin@ethos.com` / `admin123`
 
 
-## 📸 Screenshots
-
-### Login Page
-![Login](screenshots/login.png)
-
-### HR Dashboard
-![HR Dashboard](screenshots/hr-dashboard.png)
-
-### Employee Dashboard
-![Employee Dashboard](screenshots/employee-dashboard.png)
-
 ## 🔧 Configuration
 
 ### SendGrid Setup
