@@ -5,7 +5,6 @@ A modern Human Resource Management System built with Django for Ethos Manufactur
 ![Python](https://img.shields.io/badge/Python-3.11-blue)
 ![Django](https://img.shields.io/badge/Django-5.1-green)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.0-38B2AC)
-![License](https://img.shields.io/badge/License-MIT-yellow)
 
 ## 📋 Overview
 
