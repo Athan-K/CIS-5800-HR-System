@@ -5,7 +5,10 @@ A modern Human Resource Management System built with Django for Ethos Manufactur
 ![Python](https://img.shields.io/badge/Python-3.11-blue)
 ![Django](https://img.shields.io/badge/Django-5.1-green)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.0-38B2AC)
-![License](https://img.shields.io/badge/License-MIT-yellow)
+
+## Website url
+
+https://ethos-hrms.onrender.com
 
 ## 📋 Overview
 
@@ -31,7 +34,7 @@ Ethos HRMS is a full-featured human resource management system designed to strea
 
 ### Security Features
 - **Two-Factor Authentication (2FA)** - Optional TOTP-based 2FA using authenticator apps
-- **Role-Based Access Control** - Admin, HR, Manager, and Employee roles
+- **Role-Based Access Control** - HR, Manager, and Employee roles
 - **Terminated Employee Blocking** - Automatic access revocation for terminated employees
 
 ### Email Notifications
@@ -116,17 +119,6 @@ Ethos HRMS is a full-featured human resource management system designed to strea
    - Open http://127.0.0.1:8000 in your browser
    - Default admin login: `admin@ethos.com` / `admin123`
 
-
-## 📸 Screenshots
-
-### Login Page
-![Login](screenshots/login.png)
-
-### HR Dashboard
-![HR Dashboard](screenshots/hr-dashboard.png)
-
-### Employee Dashboard
-![Employee Dashboard](screenshots/employee-dashboard.png)
 
 ## 🔧 Configuration
 
