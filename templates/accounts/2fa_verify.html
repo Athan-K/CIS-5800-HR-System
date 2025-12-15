@@ -47,9 +47,13 @@
             </form>
             
             <div class="mt-6 text-center">
-                <p class="text-sm text-gray-600">
+                <p class="text-sm text-gray-600 mb-4">
                     Having trouble? Contact your HR administrator for help.
                 </p>
+                <a href="{% url 'account_logout' %}" 
+                   class="text-green-600 hover:text-green-700 text-sm font-medium">
+                    ← Back to Login
+                </a>
             </div>
         </div>
     </div>

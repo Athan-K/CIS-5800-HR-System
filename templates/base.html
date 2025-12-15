@@ -48,6 +48,7 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body class="bg-gray-50 min-h-screen">
+    {% load static %}
     {% block body %}
     <!-- Header -->
     <header class="header-bg py-8">
@@ -55,7 +56,7 @@
             <div class="flex justify-between items-center">
                 <h1 class="text-4xl font-bold text-gray-800">Ethos Managing System</h1>
                 <div class="bg-gray-200 px-6 py-4 rounded">
-                    <span class="font-bold text-sm">Insert Logo Here</span>
+                    <img src="{% static 'images/Ethos_logo.jpeg' %}" alt="Ethos Logo" class="h-16 w-16 mix-blend-multiply">
                 </div>
             </div>
             
