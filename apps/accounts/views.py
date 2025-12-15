@@ -21,10 +21,15 @@ def dashboard_redirect(request):
     user = request.user
     
     # Check if employee is terminated
-    if hasattr(user, 'employee_profile') and user.employee_profile.status == 'terminated':
-        messages.error(request, 'Your account has been terminated. Please contact HR.')
-        logout(request)
-        return redirect('account_login')
+    try:
+        if hasattr(user, 'employee_profile'):
+            profile = user.employee_profile
+            if profile and profile.status == 'terminated':
+                messages.error(request, 'Your account has been terminated. Please contact HR.')
+                logout(request)
+                return redirect('account_login')
+    except Exception:
+        pass
 
     # HR, Admin, and Manager go to HR dashboard
     if user.role in ['hr', 'admin', 'manager']:

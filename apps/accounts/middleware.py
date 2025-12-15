@@ -4,7 +4,7 @@ from django.contrib import messages
 
 
 class TwoFactorMiddleware:
-    """Middleware to enforce 2FA verification after login."""
+    """Middleware to enforce 2FA verification after login and block terminated employees."""
     
     EXEMPT_URLS = [
         '/accounts/',
@@ -20,11 +20,16 @@ class TwoFactorMiddleware:
         if not request.user.is_authenticated:
             return self.get_response(request)
         
-        # Check if employee is terminated
-        if hasattr(request.user, 'employee_profile') and request.user.employee_profile.status == 'terminated':
-            messages.error(request, 'Your account has been terminated. Please contact HR.')
-            logout(request)
-            return redirect('account_login')
+        # Check if employee is terminated - block access immediately
+        try:
+            if hasattr(request.user, 'employee_profile'):
+                profile = request.user.employee_profile
+                if profile and profile.status == 'terminated':
+                    messages.error(request, 'Your account has been terminated. Please contact HR.')
+                    logout(request)
+                    return redirect('account_login')
+        except Exception:
+            pass  # If any error, just continue
         
         # Skip for exempt URLs
         path = request.path
