@@ -6,6 +6,10 @@ A modern Human Resource Management System built with Django for Ethos Manufactur
 ![Django](https://img.shields.io/badge/Django-5.1-green)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.0-38B2AC)
 
+## Website url
+
+https://ethos-hrms.onrender.com
+
 ## 📋 Overview
 
 Ethos HRMS is a full-featured human resource management system designed to streamline HR operations. It provides separate portals for HR administrators and employees, enabling efficient management of employee data, leave requests, attendance tracking, and more.
